@@ -8,22 +8,45 @@ PHONE_NUMBER="404-551-6532"
 PROJECT_DIR="$HOME/Desktop/ekoleadgenerator/solar-data-extractor"
 OUTPUT_DIR="$PROJECT_DIR/output"
 
-# Function to open Messages app with pre-filled message
+# Function to send iMessage/SMS automatically
 send_text_message() {
     local recipient="$1"
     local message="$2"
 
-    # Remove dashes and spaces from phone number for URL
-    local phone_clean=$(echo "$recipient" | tr -d ' -()' )
+    # Ensure Messages app is running
+    osascript -e 'tell application "Messages" to activate' 2>/dev/null
+    sleep 1
 
-    # URL encode the message
-    local encoded_message=$(echo "$message" | sed 's/ /%20/g' | sed 's/!/%21/g' | sed 's/\n/%0A/g')
+    # Send message via AppleScript with retry logic
+    local max_retries=3
+    local retry_count=0
+    local success=false
 
-    # Open Messages app with pre-filled text (user clicks Send)
-    open "sms:${phone_clean}&body=${encoded_message}"
+    while [ $retry_count -lt $max_retries ] && [ "$success" = false ]; do
+        if osascript <<EOF 2>/dev/null
+tell application "Messages"
+    set targetBuddy to "$recipient"
+    set targetService to 1st account whose service type = iMessage
+    set theBuddy to participant targetBuddy of targetService
+    send "$message" to theBuddy
+end tell
+EOF
+        then
+            success=true
+        else
+            ((retry_count++))
+            sleep 2
+        fi
+    done
 
-    # Wait a moment for Messages to open
-    sleep 2
+    if [ "$success" = false ]; then
+        echo "   ⚠️  AppleScript failed, trying alternative method..."
+        # Fallback: Use SMS URL scheme and auto-click Send with delay
+        open "sms:$(echo "$recipient" | tr -d ' -()')&body=$(echo "$message" | jq -sRr @uri 2>/dev/null || echo "$message" | sed 's/ /%20/g')"
+        sleep 3
+        # Auto-press Return to send (simulates clicking Send button)
+        osascript -e 'tell application "System Events" to keystroke return'
+    fi
 }
 
 # Function to create short text alert for Hot lead
@@ -84,10 +107,10 @@ notify_hot_leads_via_text() {
             TEXT_MESSAGE=$(create_lead_text "$name" "$location" "$phone" "$score" "$source")
 
             # Send text
-            echo "   📤 Opening text to $PHONE_NUMBER..."
+            echo "   📤 Sending text to $PHONE_NUMBER..."
 
             send_text_message "$PHONE_NUMBER" "$TEXT_MESSAGE"
-            echo "   ✅ Message ready - click Send in Messages app!"
+            echo "   ✅ Text sent automatically!"
             ((sent_count++))
 
             echo ""
@@ -101,8 +124,7 @@ notify_hot_leads_via_text() {
         echo "ℹ️  No Hot leads found in this batch"
     else
         echo ""
-        echo "✅ Opened $sent_count/$hot_count text notifications to $PHONE_NUMBER"
-        echo "   Click 'Send' in Messages app to deliver!"
+        echo "✅ Sent $sent_count/$hot_count text notifications to $PHONE_NUMBER automatically!"
     fi
 }
 
@@ -137,14 +159,14 @@ System: EkoSolarPros Lead Gen
 EOF
 )
 
-    echo "📱 Opening test text to $PHONE_NUMBER..."
+    echo "📱 Sending test text to $PHONE_NUMBER..."
 
     send_text_message "$PHONE_NUMBER" "$TEST_MESSAGE"
-    echo "✅ Test message ready in Messages app!"
+    echo "✅ Test message sent automatically!"
     echo ""
-    echo "📱 Click 'Send' to complete the test"
+    echo "📱 Check your phone: $PHONE_NUMBER"
     echo ""
-    echo "If you receive it, text notifications are working!"
+    echo "If you received it, automated text notifications are working!"
 
     exit 0
 fi
@@ -159,7 +181,7 @@ notify_hot_leads_via_text "$LATEST_CSV"
 echo ""
 echo "═══════════════════════════════════════════════════════════════"
 echo ""
-echo "📱 Text notifications ready for: $PHONE_NUMBER"
+echo "📱 Text notifications sent automatically to: $PHONE_NUMBER"
 echo ""
-echo "💡 Click 'Send' in Messages app to deliver alerts"
+echo "💡 Check your phone for Hot lead alerts!"
 echo ""

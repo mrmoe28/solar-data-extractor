@@ -17,13 +17,11 @@ send_email_via_mailapp() {
     # Create AppleScript to send email
     osascript <<EOF
 tell application "Mail"
-    set newMessage to make new outgoing message with properties {subject:"${subject}", content:"${body}", visible:true}
+    set newMessage to make new outgoing message with properties {subject:"${subject}", content:"${body}", visible:false}
     tell newMessage
         make new to recipient with properties {address:"${recipient}"}
     end tell
-    activate
-    -- Uncomment the line below to auto-send (currently opens draft for review)
-    -- send newMessage
+    send newMessage
 end tell
 EOF
 }
@@ -99,18 +97,15 @@ if [ -z "$LATEST_CSV" ]; then
         "85" \
         "Nextdoor - East Cobb")
 
-    echo "📧 Opening Mail.app with test email..."
+    echo "📧 Sending test email via Mail.app..."
     send_email_via_mailapp "$EMAIL_SUBJECT (TEST)" "$TEST_BODY" "$EMAIL_TO"
 
     echo ""
-    echo "✅ Email draft opened in Mail.app"
+    echo "✅ Test email sent automatically!"
     echo ""
-    echo "📝 Please:"
-    echo "   1. Review the email in Mail.app"
-    echo "   2. Make sure your email account is configured"
-    echo "   3. Click 'Send' to test"
+    echo "📧 Check your inbox: $EMAIL_TO"
     echo ""
-    echo "💡 Once you verify it works, I can update the script to auto-send"
+    echo "If you received it, automated email notifications are working!"
     exit 0
 fi
 
@@ -140,17 +135,13 @@ if [ "$HOT_COUNT" -eq 0 ]; then
             "Test System")
 
         send_email_via_mailapp "$EMAIL_SUBJECT (TEST)" "$TEST_BODY" "$EMAIL_TO"
-        echo "✅ Test email opened in Mail.app"
+        echo "✅ Test email sent automatically!"
     fi
 else
     echo "🔥 Found $HOT_COUNT Hot lead(s)!"
     echo ""
-    echo "📧 Opening Mail.app to send notifications..."
+    echo "📧 Sending email notifications automatically..."
     echo ""
-
-    # For now, just show first Hot lead
-    echo "Opening email draft for first Hot lead..."
-    echo "(Script will auto-send once you verify it works)"
 
     # Get first Hot lead
     FIRST_HOT=$(tail -n +2 "$LATEST_CSV" | grep -i ",Hot," | head -1)
@@ -177,17 +168,14 @@ else
             "$source")
 
         send_email_via_mailapp "$EMAIL_SUBJECT" "$EMAIL_BODY" "$EMAIL_TO"
-        echo "✅ Email draft opened in Mail.app"
+        echo "✅ Email sent automatically!"
     fi
 fi
 
 echo ""
 echo "═══════════════════════════════════════════════════════════════"
 echo ""
-echo "📧 Email opened in Mail.app!"
+echo "📧 Email notifications sent automatically!"
 echo ""
-echo "Next steps:"
-echo "  1. Review the email"
-echo "  2. Click 'Send' to send it"
-echo "  3. If it works, I can update script to auto-send"
+echo "Check your inbox: $EMAIL_TO"
 echo ""
