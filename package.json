@@ -7,6 +7,7 @@
   "scripts": {
     "scrape": "node scrape-leads.js",
     "watch": "node watch-jobs.js",
+    "export": "node export-dashboard-leads.js",
     "auto-dm": "node auto-dm-leads.js",
     "install-browsers": "playwright install chromium",
     "setup-sheets": "bash setup-google-sheets-api.sh",

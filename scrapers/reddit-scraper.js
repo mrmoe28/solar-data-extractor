@@ -6,6 +6,7 @@ export async function scrapeRedditLeads(location = 'Georgia') {
   console.log(`\n🔍 Searching Reddit for solar leads in ${location}...`);
 
   const leads = [];
+  const seenPostUrls = new Set(); // Track seen posts to avoid duplicates
 
   // Expand searches to include major Georgia cities + state-wide
   const locations = [location];
@@ -127,6 +128,13 @@ export async function scrapeRedditLeads(location = 'Georgia') {
           continue;
         }
 
+        // Skip duplicate posts (same URL already processed)
+        const postUrl = `https://reddit.com${post.permalink}`;
+        if (seenPostUrls.has(postUrl)) {
+          continue;
+        }
+        seenPostUrls.add(postUrl);
+
         foundCount++;
 
         // Extract location from post content
@@ -195,7 +203,7 @@ export async function scrapeRedditLeads(location = 'Georgia') {
           location: extractedLocation,
           message: title.substring(0, 500), // Limit message length
           profileUrl: `https://reddit.com/user/${post.author}`,
-          postUrl: `https://reddit.com${post.permalink}`,
+          postUrl: postUrl,
           timestamp: postTime.toISOString(),
           score,
           priority,
