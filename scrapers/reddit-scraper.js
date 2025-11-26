@@ -1,4 +1,59 @@
 /**
+ * Check if a Reddit post has been resolved in comments
+ * Returns true if the OP found a solution
+ */
+async function checkIfResolved(permalink) {
+  try {
+    // Fetch post comments from Reddit JSON API
+    const commentsUrl = `https://www.reddit.com${permalink}.json`;
+    const response = await fetch(commentsUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+      }
+    });
+
+    if (!response.ok) return false; // If we can't check, assume not resolved
+
+    const data = await response.json();
+    if (!data || data.length < 2) return false;
+
+    const post = data[0]?.data?.children?.[0]?.data;
+    const comments = data[1]?.data?.children || [];
+
+    // Get OP's username
+    const opAuthor = post?.author;
+    if (!opAuthor) return false;
+
+    // Check OP's replies for resolution indicators
+    const resolutionKeywords = /thank|thanks|solved|fixed|worked|perfect|exactly what i needed|that did it|problem solved|issue resolved|all set|got it working|this helped|appreciate|you're right/i;
+
+    for (const comment of comments) {
+      const commentData = comment.data;
+      if (!commentData || commentData.author !== opAuthor) continue;
+
+      const commentText = commentData.body || '';
+
+      // OP replied with positive resolution
+      if (resolutionKeywords.test(commentText)) {
+        console.log(`    ✗ Skipping - OP found solution: "${commentText.substring(0, 50)}..."`);
+        return true;
+      }
+    }
+
+    // Check if post is marked as resolved
+    const flair = post?.link_flair_text?.toLowerCase() || '';
+    if (flair.includes('solved') || flair.includes('resolved') || flair.includes('closed')) {
+      console.log(`    ✗ Skipping - Post marked as: ${flair}`);
+      return true;
+    }
+
+    return false; // Not resolved
+  } catch (error) {
+    return false; // If we can't check, assume not resolved
+  }
+}
+
+/**
  * Reddit Solar Lead Scraper
  * Uses Reddit's JSON API to find real people asking about solar
  */
@@ -105,6 +160,12 @@ export async function scrapeRedditLeads(location = 'Georgia') {
           continue;
         }
         seenPostUrls.add(postUrl);
+
+        // Check if the lead has been resolved in comments
+        const isResolved = await checkIfResolved(post.permalink);
+        if (isResolved) {
+          continue; // Skip this lead, they already found help
+        }
 
         foundCount++;
 
