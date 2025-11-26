@@ -1,1 +1,8 @@
 .gmail-config
+node_modules/
+config/
+output/*.csv
+output/*.md
+package-lock.json
+.DS_Store
+*.log

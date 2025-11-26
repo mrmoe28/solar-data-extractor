@@ -1,0 +1,22 @@
+{
+  "name": "solar-lead-scraper",
+  "version": "1.0.0",
+  "description": "Real-time solar lead scraping with Playwright and Google Sheets integration",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "scrape": "node scrape-leads.js",
+    "auto-dm": "node auto-dm-leads.js",
+    "install-browsers": "playwright install chromium",
+    "setup-sheets": "bash setup-google-sheets-api.sh",
+    "workflow": "bash automated-lead-workflow.sh"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.0",
+    "googleapis": "^131.0.0",
+    "playwright": "^1.48.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
