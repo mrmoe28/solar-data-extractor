@@ -1,26 +1,110 @@
 /**
- * Check if a Reddit post has been resolved in comments
- * Returns true if the OP found a solution
+ * Enhanced Reddit Solar Lead Scraper with OAuth Support & Rate Limit Handling
+ * Works without OAuth but performs better with it
  */
-async function checkIfResolved(permalink) {
+
+let accessToken = null;
+let tokenExpiry = null;
+
+/**
+ * Get Reddit OAuth access token (optional - falls back to public API)
+ */
+async function getAccessToken() {
+  const clientId = process.env.REDDIT_CLIENT_ID;
+  const clientSecret = process.env.REDDIT_CLIENT_SECRET;
+
+  // If no credentials, use public API
+  if (!clientId || !clientSecret) {
+    return null;
+  }
+
+  // Return cached token if still valid
+  if (accessToken && tokenExpiry && Date.now() < tokenExpiry) {
+    return accessToken;
+  }
+
   try {
-    // Fetch post comments from Reddit JSON API
-    const commentsUrl = `https://www.reddit.com${permalink}.json`;
-    const response = await fetch(commentsUrl, {
+    const response = await fetch('https://www.reddit.com/api/v1/access_token', {
+      method: 'POST',
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
-      }
+        'Authorization': `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'User-Agent': 'SolarLeadAutomation/1.0'
+      },
+      body: 'grant_type=client_credentials'
     });
 
-    if (!response.ok) return false; // If we can't check, assume not resolved
+    if (response.ok) {
+      const data = await response.json();
+      accessToken = data.access_token;
+      tokenExpiry = Date.now() + (data.expires_in * 1000) - 60000; // Refresh 1 min early
+      console.log('  ✓ Reddit OAuth authenticated');
+      return accessToken;
+    }
+  } catch (error) {
+    console.log('  ⚠️  Reddit OAuth failed, using public API');
+  }
+
+  return null;
+}
+
+/**
+ * Fetch with exponential backoff retry logic
+ */
+async function fetchWithRetry(url, options = {}, maxRetries = 3) {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+
+      // Success
+      if (response.ok) {
+        return response;
+      }
+
+      // Rate limited - wait and retry
+      if (response.status === 429) {
+        const waitTime = Math.pow(2, attempt) * 2000; // 2s, 4s, 8s
+        console.log(`    ⏳ Rate limited, waiting ${waitTime / 1000}s...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        continue;
+      }
+
+      // Other errors - return immediately
+      return response;
+    } catch (error) {
+      if (attempt === maxRetries - 1) throw error;
+      await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+    }
+  }
+
+  throw new Error('Max retries exceeded');
+}
+
+/**
+ * Check if a Reddit post has been resolved in comments
+ */
+async function checkIfResolved(permalink, token) {
+  try {
+    const commentsUrl = token
+      ? `https://oauth.reddit.com${permalink}.json`
+      : `https://www.reddit.com${permalink}.json`;
+
+    const headers = {
+      'User-Agent': 'SolarLeadAutomation/1.0'
+    };
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetchWithRetry(commentsUrl, { headers }, 2);
+    if (!response.ok) return false;
 
     const data = await response.json();
     if (!data || data.length < 2) return false;
 
     const post = data[0]?.data?.children?.[0]?.data;
     const comments = data[1]?.data?.children || [];
-
-    // Get OP's username
     const opAuthor = post?.author;
     if (!opAuthor) return false;
 
@@ -32,8 +116,6 @@ async function checkIfResolved(permalink) {
       if (!commentData || commentData.author !== opAuthor) continue;
 
       const commentText = commentData.body || '';
-
-      // OP replied with positive resolution
       if (resolutionKeywords.test(commentText)) {
         console.log(`    ✗ Skipping - OP found solution: "${commentText.substring(0, 50)}..."`);
         return true;
@@ -47,54 +129,54 @@ async function checkIfResolved(permalink) {
       return true;
     }
 
-    return false; // Not resolved
+    return false;
   } catch (error) {
-    return false; // If we can't check, assume not resolved
+    return false;
   }
 }
 
 /**
  * Reddit Solar Lead Scraper
- * Uses Reddit's JSON API to find real people asking about solar
  */
 export async function scrapeRedditLeads(location = 'Georgia') {
   console.log(`\n🔍 Searching Reddit for solar leads in ${location}...`);
 
-  const leads = [];
-  const seenPostUrls = new Set(); // Track seen posts to avoid duplicates
+  // Get OAuth token if available
+  const token = await getAccessToken();
 
-  // OPTIMIZED: Focus on high-quality searches to avoid rate limiting
-  // Use targeted subreddit searches instead of broad keyword searches
+  const leads = [];
+  const seenPostUrls = new Set();
+
+  // OPTIMIZED: Reduced searches to avoid rate limiting (8 → 4)
+  // Focus on highest-value sources only
   const searches = [
-    // Solar-specific subreddits (most relevant)
+    // Solar-specific subreddits (most relevant - HIGH ROI)
     `(installer OR repair OR "not working" OR broken) ${location} subreddit:solar`,
+
+    // DIY solar (people troubleshooting - HOT LEADS)
     `(installer OR repair OR "not working" OR broken) ${location} subreddit:SolarDIY`,
 
-    // Location-specific subreddits (local discussion)
-    `(solar OR "solar panel" OR "solar power") (installer OR repair OR broken) subreddit:${location.toLowerCase()}`,
-
-    // Home improvement subreddits (installation requests)
-    `solar (installer OR repair OR quote) ${location} subreddit:homeimprovement`,
-    `solar (installer OR repair OR quote) ${location} subreddit:HomeOwners`,
-
-    // Broad searches for repair (HOT leads - people with urgent problems)
+    // Urgent repair requests (HOTTEST LEADS)
     `"solar not working" ${location}`,
-    `"solar repair" ${location}`,
-    `"solar panel broken" ${location}`
+    `"solar panel broken" ${location}`,
   ];
 
   for (const query of searches) {
     try {
       console.log(`  Checking: ${query}`);
 
-      // Use Reddit's JSON API (much more reliable than scraping HTML)
-      const searchUrl = `https://www.reddit.com/search.json?q=${encodeURIComponent(query)}&sort=new&limit=25&t=month`;
+      const baseUrl = token ? 'https://oauth.reddit.com' : 'https://www.reddit.com';
+      const searchUrl = `${baseUrl}/search.json?q=${encodeURIComponent(query)}&sort=new&limit=25&t=month`;
 
-      const response = await fetch(searchUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
-        }
-      });
+      const headers = {
+        'User-Agent': 'SolarLeadAutomation/1.0'
+      };
+
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetchWithRetry(searchUrl, { headers });
 
       if (!response.ok) {
         console.log(`    API error: ${response.status}`);
@@ -106,110 +188,78 @@ export async function scrapeRedditLeads(location = 'Georgia') {
 
       let foundCount = 0;
 
-      // Process each post
       for (const item of posts) {
         const post = item.data;
 
-        // Check if it's a question/request (including repair/troubleshooting)
+        // Check if it's a question/request
         const title = post.title || '';
         const selftext = post.selftext || '';
         const fullText = `${title} ${selftext}`;
-        const fullTextLower = fullText.toLowerCase();
 
-        // CRITICAL: Must mention solar PANELS/POWER/INSTALLATION (not just "solar system" as in space)
+        // Must mention solar panels/power/installation
         const hasSolarContext = /solar panel|solar power|solar energy|solar installation|solar installer|solar system installation|photovoltaic|pv system|solar array|solar roof/i.test(fullText);
+        if (!hasSolarContext) continue;
 
-        if (!hasSolarContext) {
-          continue; // Skip posts about space, fiction, or unrelated "solar" mentions
-        }
-
-        // EXTRA FILTER: Solar keywords must appear in TITLE or post must be from solar-related subreddit
-        const titleLower = title.toLowerCase();
+        // Solar in title OR solar subreddit
         const hasSolarInTitle = /solar panel|solar power|solar energy|solar installation|solar installer|photovoltaic|pv|inverter|solar|panel/i.test(title);
         const isSolarSubreddit = /solar|renewable|green.*energy|homeimprovement|diy|electrical|homeowners/i.test(post.subreddit);
+        if (!hasSolarInTitle && !isSolarSubreddit) continue;
 
-        // Accept if: (solar in title) OR (solar subreddit AND installation/repair request)
-        if (!hasSolarInTitle && !isSolarSubreddit) {
-          continue; // Skip if solar only mentioned in body of non-solar subreddit
-        }
+        // Filter out business ads
+        const isBusinessAd = /we offer|our company|our team|our service|free estimate|call us|contact us|visit our|licensed and|certified|years of experience|family owned|serving|professional|check us out|dm for|pm for|click here|www\\.|\\.com|discount|promotion|special offer/i.test(fullText);
+        if (isBusinessAd) continue;
 
-        // FILTER OUT BUSINESS ADS AND PROMOTIONAL CONTENT
-        const isBusinessAd = /we offer|our company|our team|our service|free estimate|call us|contact us|visit our|licensed and|certified|years of experience|family owned|serving|professional|check us out|dm for|pm for|click here|www\.|\.com|discount|promotion|special offer/i.test(fullText);
-
-        if (isBusinessAd) {
-          continue; // Skip business ads
-        }
-
-        // ONLY ACCEPT: Installation requests OR Repair requests
+        // Only accept installation or repair requests
         const isInstallationRequest = /looking for.*installer|need.*installer|hire.*installer|recommend.*installer|seeking.*installer|anyone install|who installs/i.test(fullText);
         const isRepairRequest = /not working|broken|stopped working|no power|error|fault|failed|repair|fix|troubleshoot|inverter.*issue|panel.*issue|system.*down|offline/i.test(fullText);
-
-        // Must be ASKING for installation or repair (not offering services)
-        if (!isInstallationRequest && !isRepairRequest) {
-          continue;
-        }
+        if (!isInstallationRequest && !isRepairRequest) continue;
 
         // Skip deleted accounts
-        if (!post.author || post.author === '[deleted]') {
-          continue;
-        }
+        if (!post.author || post.author === '[deleted]') continue;
 
-        // Skip duplicate posts (same URL already processed)
+        // Skip duplicates
         const postUrl = `https://reddit.com${post.permalink}`;
-        if (seenPostUrls.has(postUrl)) {
-          continue;
-        }
+        if (seenPostUrls.has(postUrl)) continue;
         seenPostUrls.add(postUrl);
 
-        // Check if the lead has been resolved in comments
-        const isResolved = await checkIfResolved(post.permalink);
-        if (isResolved) {
-          continue; // Skip this lead, they already found help
-        }
+        // Check if resolved in comments
+        const isResolved = await checkIfResolved(post.permalink, token);
+        if (isResolved) continue;
 
         foundCount++;
 
-        // Extract location from post content
-        let extractedLocation = location; // Default to search location
+        // Extract location
+        let extractedLocation = location;
         const locationMatch = fullText.match(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*),?\s+(GA|Georgia|AL|Alabama|FL|Florida|TN|Tennessee|SC|South Carolina|NC|North Carolina)\b/);
         if (locationMatch) {
           extractedLocation = `${locationMatch[1]}, ${locationMatch[2]}`;
         }
 
-        // Extract phone number if included in post
-        const phoneMatch = fullText.match(/(\d{3}[-.\s]?\d{3}[-.\s]?\d{4}|\(\d{3}\)\s*\d{3}[-.\s]?\d{4})/);
+        // Extract contact info
+        const phoneMatch = fullText.match(/(\d{3}[-.\\s]?\d{3}[-.\\s]?\d{4}|\\(\\d{3}\\)\\s*\d{3}[-.\\s]?\d{4})/);
         const phone = phoneMatch ? phoneMatch[0] : '';
 
-        // Extract email if included in post
-        const emailMatch = fullText.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/);
+        const emailMatch = fullText.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\\.[a-zA-Z0-9_-]+)/);
         const email = emailMatch ? emailMatch[0] : '';
 
-        // Determine specific intent: ONLY Installation or Repair
-        let intent = 'Installation';
-        const messageText = fullText.toLowerCase();
-
-        if (isRepairRequest) {
-          intent = 'Repair/Service';
-        } else if (isInstallationRequest) {
-          intent = 'Installation';
-        }
+        // Determine intent
+        let intent = isRepairRequest ? 'Repair/Service' : 'Installation';
 
         // Score the lead
         let score = 0;
+        const messageText = fullText.toLowerCase();
 
-        // REPAIR/TROUBLESHOOTING = EXTREMELY HOT (broken system = urgent need!)
+        // REPAIR = HOTTEST
         if (/not working|broken|stopped working|no power|error|fault|failed/.test(messageText)) score += 40;
         if (/repair|fix|troubleshoot|service|maintenance/.test(messageText)) score += 35;
         if (/inverter|panel|system.*down|offline/.test(messageText)) score += 30;
-        if (/installer.*not responding|can't reach|won't answer/.test(messageText)) score += 25;
 
-        // High intent keywords (new installation)
+        // High intent
         if (/quote|estimate|cost|price|how much/.test(messageText)) score += 30;
         if (/need|looking for|hire/.test(messageText)) score += 20;
         if (/urgent|asap|soon|immediately/.test(messageText)) score += 15;
-        if (/recommend|recommendation|best/.test(messageText)) score += 10;
 
-        // Recent posts
+        // Recency
         const postTime = post.created_utc ? new Date(post.created_utc * 1000) : new Date();
         const age = new Date() - postTime;
         const days = age / (1000 * 60 * 60 * 24);
@@ -217,34 +267,20 @@ export async function scrapeRedditLeads(location = 'Georgia') {
         else if (days < 7) score += 10;
         else if (days < 30) score += 5;
 
-        // BOOST SCORE if they included contact info (very hot!)
+        // Contact info boost
         if (phone) score += 20;
         if (email) score += 20;
 
-        // Determine contact method
-        let contactMethod = '';
-        if (phone) {
-          contactMethod = 'Phone';
-        } else if (email) {
-          contactMethod = 'Email';
-        } else {
-          contactMethod = 'Reddit DM';
-          // Reddit DM leads still valuable - they'll respond to outreach
-        }
-
         const priority = score >= 50 ? 'Hot' : score >= 30 ? 'Warm' : 'Cold';
 
-        // Better name formatting
-        const displayName = phone || email
-          ? post.author // If they have contact info, show username
-          : `u/${post.author}`;
+        const displayName = phone || email ? post.author : `u/${post.author}`;
 
         leads.push({
           source: 'Reddit',
           platform: `r/${post.subreddit}`,
           name: displayName,
           location: extractedLocation,
-          message: title.substring(0, 500), // Limit message length
+          message: title.substring(0, 500),
           profileUrl: `https://reddit.com/user/${post.author}`,
           postUrl: postUrl,
           timestamp: postTime.toISOString(),
@@ -253,7 +289,7 @@ export async function scrapeRedditLeads(location = 'Georgia') {
           intent,
           phone: phone || `DM: u/${post.author}`,
           email: email || '',
-          contactMethod
+          contactMethod: phone ? 'Phone' : email ? 'Email' : 'Reddit DM'
         });
       }
 
@@ -263,8 +299,10 @@ export async function scrapeRedditLeads(location = 'Georgia') {
       console.error(`  Error searching "${query}":`, error.message);
     }
 
-    // Rate limit: Wait 2 seconds between searches (avoid 429 errors)
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Rate limit: Wait between searches
+    // With OAuth: 1s, Without OAuth: 5s (to avoid 429 errors)
+    const delay = token ? 1000 : 5000;
+    await new Promise(resolve => setTimeout(resolve, delay));
   }
 
   console.log(`✅ Reddit scraping complete: ${leads.length} leads found`);
