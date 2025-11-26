@@ -9,7 +9,9 @@ class DashboardAPIClient {
   constructor(apiUrl, apiKey) {
     this.apiUrl = apiUrl || process.env.DASHBOARD_API_URL;
     this.apiKey = apiKey || process.env.SCRAPER_API_KEY;
-    this.sessionId = null;
+
+    // Check if we're resuming an existing session (from job watcher)
+    this.sessionId = process.env.SCRAPING_SESSION_ID ? parseInt(process.env.SCRAPING_SESSION_ID) : null;
 
     if (!this.apiUrl) {
       console.warn('⚠️  DASHBOARD_API_URL not set. Running in offline mode.');
@@ -20,16 +22,38 @@ class DashboardAPIClient {
     } else {
       this.enabled = true;
       console.log(`✅ Dashboard API Client connected to ${this.apiUrl}`);
+
+      if (this.sessionId) {
+        console.log(`🔄 Resuming existing session: #${this.sessionId}`);
+      }
     }
   }
 
   /**
-   * Start a new scraping session
+   * Start a new scraping session or update existing one to running
    */
   async createSession(location) {
     if (!this.enabled) return null;
 
     try {
+      // If we already have a session ID (from job watcher), update it to running
+      if (this.sessionId) {
+        await fetch(`${this.apiUrl}/api/scraping/sessions`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            sessionId: this.sessionId,
+            status: 'running',
+            apiKey: this.apiKey,
+          }),
+        });
+        console.log(`✅ Session #${this.sessionId} started`);
+        return this.sessionId;
+      }
+
+      // Otherwise create a new session
       const response = await fetch(`${this.apiUrl}/api/scraping/start`, {
         method: 'POST',
         headers: {
