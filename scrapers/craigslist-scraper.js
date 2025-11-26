@@ -1,17 +1,10 @@
-import { chromium } from 'playwright';
-
 /**
  * Craigslist Solar Lead Scraper
+ * Uses RSS feeds - much more reliable than web scraping!
  * Finds people posting in "services wanted" looking for solar installers
  */
 export async function scrapeCraigslistLeads(location = 'atlanta') {
   console.log(`\n🔍 Searching Craigslist for solar leads in ${location}...`);
-
-  const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({
-    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
-  });
-  const page = await context.newPage();
 
   const leads = [];
 
@@ -22,57 +15,66 @@ export async function scrapeCraigslistLeads(location = 'atlanta') {
     'savannah': 'savannah',
     'augusta': 'augusta',
     'macon': 'macon',
-    'columbus': 'columbus'
+    'columbus': 'columbus',
+    'fulton': 'atlanta'
   };
 
   const city = cityMap[location.toLowerCase()] || 'atlanta';
 
   try {
-    // Search in services wanted
-    const searchUrl = `https://${city}.craigslist.org/search/wan?query=solar&sort=date`;
-    console.log(`  Checking: ${searchUrl}`);
+    // Use RSS feed instead of web scraping (much more reliable!)
+    const rssUrl = `https://${city}.craigslist.org/search/wan?query=solar&sort=date&format=rss`;
+    console.log(`  Checking: ${rssUrl}`);
 
-    await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    await page.waitForTimeout(2000);
-
-    // Extract posts
-    const posts = await page.evaluate(() => {
-      const results = [];
-      const postElements = document.querySelectorAll('.result-row');
-
-      postElements.forEach((post, index) => {
-        if (index > 20) return; // Limit to first 20 posts
-
-        try {
-          const titleEl = post.querySelector('.result-title');
-          const title = titleEl?.textContent?.trim() || '';
-          const postUrl = titleEl?.href || '';
-
-          const timeEl = post.querySelector('.result-date');
-          const timestamp = timeEl?.getAttribute('datetime') || '';
-
-          const locationEl = post.querySelector('.result-hood');
-          const hood = locationEl?.textContent?.trim().replace(/[()]/g, '') || '';
-
-          // Check if it's about installation/repair/service
-          const isServiceRequest = /install|repair|quote|looking for|need|hire|cost|price|fix|troubleshoot|not working|broken|service/i.test(title);
-          const isSolar = /solar|panel|photovoltaic|pv|inverter/i.test(title);
-
-          if (isServiceRequest && isSolar) {
-            results.push({
-              title,
-              postUrl,
-              timestamp,
-              location: hood
-            });
-          }
-        } catch (e) {
-          console.error('Error extracting post:', e.message);
-        }
-      });
-
-      return results;
+    const response = await fetch(rssUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+      }
     });
+
+    if (!response.ok) {
+      console.log(`    RSS feed error: ${response.status}`);
+      return leads;
+    }
+
+    const rssText = await response.text();
+
+    // Parse RSS XML
+    const items = rssText.match(/<item>[\s\S]*?<\/item>/g) || [];
+    const posts = items.slice(0, 20).map(item => {
+      try {
+        const titleMatch = item.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/);
+        const linkMatch = item.match(/<link>(.*?)<\/link>/);
+        const dateMatch = item.match(/<dc:date>(.*?)<\/dc:date>/);
+        const descMatch = item.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/);
+
+        const title = titleMatch ? titleMatch[1] : '';
+        const postUrl = linkMatch ? linkMatch[1] : '';
+        const timestamp = dateMatch ? dateMatch[1] : '';
+        const description = descMatch ? descMatch[1] : '';
+
+        // Extract location from description
+        const locationMatch = description.match(/\((.*?)\)/);
+        const hood = locationMatch ? locationMatch[1] : '';
+
+        // Check if it's about installation/repair/service
+        const fullText = `${title} ${description}`;
+        const isServiceRequest = /install|repair|quote|looking for|need|hire|cost|price|fix|troubleshoot|not working|broken|service/i.test(fullText);
+        const isSolar = /solar|panel|photovoltaic|pv|inverter/i.test(fullText);
+
+        if (isServiceRequest && isSolar) {
+          return {
+            title,
+            postUrl,
+            timestamp,
+            location: hood
+          };
+        }
+      } catch (e) {
+        // Skip invalid items
+      }
+      return null;
+    }).filter(Boolean);
 
     // Score and add to leads
     posts.forEach(post => {
@@ -136,8 +138,6 @@ export async function scrapeCraigslistLeads(location = 'atlanta') {
   } catch (error) {
     console.error(`  Error searching Craigslist:`, error.message);
   }
-
-  await browser.close();
 
   console.log(`✅ Craigslist scraping complete: ${leads.length} leads found`);
   return leads;

@@ -61,6 +61,16 @@ export async function scrapeRedditLeads(location = 'Georgia') {
           continue; // Skip posts about space, fiction, or unrelated "solar" mentions
         }
 
+        // EXTRA FILTER: Solar keywords must appear in TITLE or post must be from solar-related subreddit
+        const titleLower = title.toLowerCase();
+        const hasSolarInTitle = /solar panel|solar power|solar energy|solar installation|solar installer|photovoltaic|pv|inverter|solar|panel/i.test(title);
+        const isSolarSubreddit = /solar|renewable|green.*energy|homeimprovement|diy|electrical|homeowners/i.test(post.subreddit);
+
+        // Accept if: (solar in title) OR (solar subreddit AND installation/repair request)
+        if (!hasSolarInTitle && !isSolarSubreddit) {
+          continue; // Skip if solar only mentioned in body of non-solar subreddit
+        }
+
         // FILTER OUT BUSINESS ADS AND PROMOTIONAL CONTENT
         const isBusinessAd = /we offer|our company|our team|our service|free estimate|call us|contact us|visit our|licensed and|certified|years of experience|family owned|serving|professional|check us out|dm for|pm for|click here|www\.|\.com|discount|promotion|special offer/i.test(fullText);
 

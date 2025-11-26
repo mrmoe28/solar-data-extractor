@@ -8,7 +8,6 @@
  */
 
 import 'dotenv/config';
-import fetch from 'node-fetch';
 import { spawn } from 'child_process';
 
 const DASHBOARD_API_URL = process.env.DASHBOARD_API_URL || 'https://eko-lead-dashboard.vercel.app';
