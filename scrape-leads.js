@@ -56,14 +56,14 @@ class LeadGenerator {
     // Ask which platforms to scrape
     const scrapePermits = true; // HIGH-ROI: People who got solar permits
     const scrapeIncentives = true; // HIGH-ROI: People applying for rebates
-    const scrapePerplexity = true; // AI-POWERED: Searches entire web with AI filtering
-    const scrapeWebSearch = true; // NEW: Web search aggregator (Google, Bing, etc.)
-    const scrapeReddit = true; // Default: always scrape Reddit (no login required)
-    const scrapeCityData = true; // NEW: City-Data local forums (no login required)
-    const scrapeCraigslist = true; // Default: always scrape Craigslist (no login required)
-    const scrapeTwitter = true; // Default: always scrape Twitter (no login required)
-    const scrapeYelp = true; // Default: always scrape Yelp Q&A (no login required)
-    const scrapeQuora = true; // Default: always scrape Quora (no login required)
+    const scrapePerplexity = true; // AI-POWERED: Searches entire web with AI filtering (needs API key)
+    const scrapeWebSearch = true; // Web search aggregator (needs Google Search Engine ID)
+    const scrapeReddit = true; // ✅ WORKING: Uses JSON API (no anti-bot blocking)
+    const scrapeCityData = false; // ❌ DISABLED: RSS feed returns 404 error
+    const scrapeCraigslist = false; // ❌ DISABLED: Returns 403 Forbidden
+    const scrapeTwitter = false; // ❌ DISABLED: Playwright blocked by anti-bot protection
+    const scrapeYelp = false; // ❌ DISABLED: Playwright blocked by anti-bot protection
+    const scrapeQuora = false; // ❌ DISABLED: Playwright blocked by anti-bot protection
     const scrapeFacebook = false; // Disabled
     const scrapeNextdoor = false; // Disabled
 
