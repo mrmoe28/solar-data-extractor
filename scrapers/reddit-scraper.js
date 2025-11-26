@@ -156,6 +156,11 @@ export async function scrapeRedditLeads(location = 'Georgia') {
         else if (days < 7) score += 10;
         else if (days < 30) score += 5;
 
+        // CRITICAL: Skip leads without contact info (phone OR email required)
+        if (!phone && !email) {
+          continue; // Can't reach them, skip this lead
+        }
+
         // BOOST SCORE if they included contact info (very hot!)
         if (phone) score += 20;
         if (email) score += 20;

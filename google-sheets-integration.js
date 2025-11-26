@@ -114,19 +114,21 @@ class GoogleSheetsIntegration {
       'Source',
       'Name',
       'Location',
+      'Address',
+      'System Size',
+      'Permit Number',
       'Message/Request',
-      'Phone',
-      'Email',
       'Profile URL',
       'Post URL',
       'Timestamp',
       'Intent',
-      'Extracted At',
+      'Phone',
+      'Email',
     ];
 
     await this.sheets.spreadsheets.values.update({
       spreadsheetId,
-      range: 'Leads!A1:M1',
+      range: 'Leads!A1:O1',
       valueInputOption: 'RAW',
       resource: {
         values: [headers],
@@ -233,7 +235,7 @@ class GoogleSheetsIntegration {
 
       const response = await this.sheets.spreadsheets.values.append({
         spreadsheetId,
-        range: 'Leads!A2:M', // Start from row 2 (after headers)
+        range: 'Leads!A2:O', // Start from row 2 (after headers)
         valueInputOption: 'USER_ENTERED',
         insertDataOption: 'INSERT_ROWS',
         resource: {
