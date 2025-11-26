@@ -8,54 +8,25 @@ export async function scrapeRedditLeads(location = 'Georgia') {
   const leads = [];
   const seenPostUrls = new Set(); // Track seen posts to avoid duplicates
 
-  // Expand searches to include major Georgia cities + state-wide
-  const locations = [location];
+  // OPTIMIZED: Focus on high-quality searches to avoid rate limiting
+  // Use targeted subreddit searches instead of broad keyword searches
+  const searches = [
+    // Solar-specific subreddits (most relevant)
+    `(installer OR repair OR "not working" OR broken) ${location} subreddit:solar`,
+    `(installer OR repair OR "not working" OR broken) ${location} subreddit:SolarDIY`,
 
-  // Add major Georgia cities if searching state-wide
-  if (location.toLowerCase() === 'georgia') {
-    locations.push('Atlanta', 'Savannah', 'Augusta', 'Columbus', 'Macon', 'Athens', 'Sandy Springs', 'Roswell', 'Albany', 'Johns Creek');
-  }
+    // Location-specific subreddits (local discussion)
+    `(solar OR "solar panel" OR "solar power") (installer OR repair OR broken) subreddit:${location.toLowerCase()}`,
 
-  const searchTemplates = [
-    // NEW INSTALLATION (people looking to hire)
-    `need solar installer`,
-    `looking for solar installer`,
-    `solar installation`,
-    `hire solar installer`,
-    // REPAIR/TROUBLESHOOTING (VERY HOT!)
-    `solar not working`,
-    `solar repair`,
-    `solar broken`,
-    `solar stopped working`
+    // Home improvement subreddits (installation requests)
+    `solar (installer OR repair OR quote) ${location} subreddit:homeimprovement`,
+    `solar (installer OR repair OR quote) ${location} subreddit:HomeOwners`,
+
+    // Broad searches for repair (HOT leads - people with urgent problems)
+    `"solar not working" ${location}`,
+    `"solar repair" ${location}`,
+    `"solar panel broken" ${location}`
   ];
-
-  // Generate searches for all locations
-  const searches = [];
-  for (const loc of locations) {
-    for (const template of searchTemplates) {
-      searches.push(`${template} ${loc}`);
-    }
-  }
-
-  // Also search location-specific subreddits
-  const locationSubreddits = [
-    'r/Atlanta',
-    'r/Georgia',
-    'r/Savannah',
-    'r/Augusta',
-    'r/Athens',
-    'r/solar',
-    'r/SolarDIY',
-    'r/solarenergy',
-    'r/homeimprovement',
-    'r/HomeOwners'
-  ];
-
-  // Add subreddit-specific searches (use Reddit's subreddit search)
-  for (const subreddit of locationSubreddits) {
-    searches.push(`solar installer ${location} subreddit:${subreddit.replace('r/', '')}`);
-    searches.push(`solar repair ${location} subreddit:${subreddit.replace('r/', '')}`);
-  }
 
   for (const query of searches) {
     try {
@@ -219,8 +190,8 @@ export async function scrapeRedditLeads(location = 'Georgia') {
       console.error(`  Error searching "${query}":`, error.message);
     }
 
-    // Rate limit: Wait 1 second between searches
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Rate limit: Wait 2 seconds between searches (avoid 429 errors)
+    await new Promise(resolve => setTimeout(resolve, 2000));
   }
 
   console.log(`✅ Reddit scraping complete: ${leads.length} leads found`);
