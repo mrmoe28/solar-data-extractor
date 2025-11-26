@@ -11,6 +11,7 @@ import { scrapePermitLeads } from './scrapers/permit-scraper.js';
 import { scrapeIncentiveLeads } from './scrapers/incentive-scraper.js';
 import { scrapeWebSearchLeads } from './scrapers/web-search-scraper.js';
 import { scrapePerplexityLeads } from './scrapers/perplexity-scraper.js';
+import { scrapeCityDataLeads } from './scrapers/city-data-scraper.js';
 import { DashboardAPIClient } from './dashboard-api-client.js';
 import fs from 'fs';
 import path from 'path';
@@ -58,6 +59,7 @@ class LeadGenerator {
     const scrapePerplexity = true; // AI-POWERED: Searches entire web with AI filtering
     const scrapeWebSearch = true; // NEW: Web search aggregator (Google, Bing, etc.)
     const scrapeReddit = true; // Default: always scrape Reddit (no login required)
+    const scrapeCityData = true; // NEW: City-Data local forums (no login required)
     const scrapeCraigslist = true; // Default: always scrape Craigslist (no login required)
     const scrapeTwitter = true; // Default: always scrape Twitter (no login required)
     const scrapeYelp = true; // Default: always scrape Yelp Q&A (no login required)
@@ -72,8 +74,9 @@ class LeadGenerator {
     console.log(`\n🤖 AI-POWERED WEB SEARCH:`);
     console.log(`  ${scrapePerplexity ? '✅' : '❌'} Perplexity AI (searches billions of pages with AI filtering)`);
     console.log(`  ${scrapeWebSearch ? '✅' : '❌'} Google Custom Search (100/day free)`);
-    console.log(`\n📱 SOCIAL MEDIA SOURCES:`);
+    console.log(`\n📱 SOCIAL MEDIA & COMMUNITY SOURCES:`);
     console.log(`  ${scrapeReddit ? '✅' : '❌'} Reddit`);
+    console.log(`  ${scrapeCityData ? '✅' : '❌'} City-Data Forums (local community discussions)`);
     console.log(`  ${scrapeCraigslist ? '✅' : '❌'} Craigslist`);
     console.log(`  ${scrapeTwitter ? '✅' : '❌'} Twitter/X`);
     console.log(`  ${scrapeYelp ? '✅' : '❌'} Yelp Q&A`);
@@ -131,6 +134,14 @@ class LeadGenerator {
         this.allLeads.push(...redditLeads);
         await this.api.sendLog('Reddit', `Found ${redditLeads.length} leads`, redditLeads.length, 'success');
         await this.api.sendLeadsBatch(redditLeads);
+      }
+
+      if (scrapeCityData) {
+        await this.api.sendLog('City-Data', 'Scraping City-Data forums...', 0, 'processing');
+        const cityDataLeads = await scrapeCityDataLeads(location);
+        this.allLeads.push(...cityDataLeads);
+        await this.api.sendLog('City-Data', `Found ${cityDataLeads.length} leads`, cityDataLeads.length, 'success');
+        await this.api.sendLeadsBatch(cityDataLeads);
       }
 
       if (scrapeCraigslist) {
