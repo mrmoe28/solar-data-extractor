@@ -16,7 +16,10 @@ const __dirname = path.dirname(__filename);
 
 class GoogleSheetsIntegration {
   constructor() {
-    this.SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
+    this.SCOPES = [
+      'https://www.googleapis.com/auth/spreadsheets',
+      'https://www.googleapis.com/auth/drive.file'
+    ];
     this.TOKEN_PATH = path.join(__dirname, 'config', 'google-sheets-token.json');
     this.CREDENTIALS_PATH = path.join(__dirname, 'config', 'google-sheets-credentials.json');
     this.SHEET_NAME = 'Eko Solar Leads';

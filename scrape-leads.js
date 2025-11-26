@@ -9,9 +9,11 @@ import { scrapeQuoraLeads } from './scrapers/quora-scraper.js';
 import { scrapeNextdoorLeads } from './scrapers/nextdoor-scraper.js';
 import { scrapePermitLeads } from './scrapers/permit-scraper.js';
 import { scrapeIncentiveLeads } from './scrapers/incentive-scraper.js';
+import { DashboardAPIClient } from './dashboard-api-client.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import 'dotenv/config';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,6 +27,7 @@ class LeadGenerator {
     this.outputDir = path.join(__dirname, 'output');
     this.timestamp = new Date().toISOString().split('T')[0];
     this.allLeads = [];
+    this.api = new DashboardAPIClient();
 
     // Ensure output directory exists
     if (!fs.existsSync(this.outputDir)) {
@@ -55,8 +58,8 @@ class LeadGenerator {
     const scrapeTwitter = true; // Default: always scrape Twitter (no login required)
     const scrapeYelp = true; // Default: always scrape Yelp Q&A (no login required)
     const scrapeQuora = true; // Default: always scrape Quora (no login required)
-    const scrapeFacebook = process.argv.includes('--facebook'); // Optional: add --facebook flag
-    const scrapeNextdoor = process.argv.includes('--nextdoor'); // Optional: add --nextdoor flag
+    const scrapeFacebook = false; // Disabled
+    const scrapeNextdoor = false; // Disabled
 
     console.log('🎯 Platforms:');
     console.log(`\n🔥 HIGH-ROI SOURCES (People Already Getting Solar):`);
@@ -68,9 +71,12 @@ class LeadGenerator {
     console.log(`  ${scrapeTwitter ? '✅' : '❌'} Twitter/X`);
     console.log(`  ${scrapeYelp ? '✅' : '❌'} Yelp Q&A`);
     console.log(`  ${scrapeQuora ? '✅' : '❌'} Quora`);
-    console.log(`  ${scrapeFacebook ? '✅' : '❌'} Facebook ${!scrapeFacebook ? '(add --facebook to enable)' : ''}`);
-    console.log(`  ${scrapeNextdoor ? '✅' : '❌'} Nextdoor ${!scrapeNextdoor ? '(add --nextdoor to enable)' : ''}`);
+    console.log(`  ${scrapeFacebook ? '✅' : '❌'} Facebook`);
+    console.log(`  ${scrapeNextdoor ? '✅' : '❌'} Nextdoor`);
     console.log('');
+
+    // Create dashboard session
+    await this.api.createSession(location);
 
     const startTime = Date.now();
 
@@ -78,52 +84,83 @@ class LeadGenerator {
     try {
       // HIGH-ROI: These are people already getting solar
       if (scrapePermits) {
+        await this.api.sendLog('Permits', 'Starting permit scraper...', 0, 'processing');
         const permitLeads = await scrapePermitLeads(location);
         this.allLeads.push(...permitLeads);
+        await this.api.sendLog('Permits', `Found ${permitLeads.length} leads from permits`, permitLeads.length, 'success');
+        await this.api.sendLeadsBatch(permitLeads);
       }
 
       if (scrapeIncentives) {
+        await this.api.sendLog('Incentives', 'Starting incentive scraper...', 0, 'processing');
         const incentiveLeads = await scrapeIncentiveLeads(location);
         this.allLeads.push(...incentiveLeads);
+        await this.api.sendLog('Incentives', `Found ${incentiveLeads.length} leads from incentives`, incentiveLeads.length, 'success');
+        await this.api.sendLeadsBatch(incentiveLeads);
       }
 
       // Social media sources
       if (scrapeReddit) {
+        await this.api.sendLog('Reddit', 'Scraping Reddit for solar leads...', 0, 'processing');
         const redditLeads = await scrapeRedditLeads(location);
         this.allLeads.push(...redditLeads);
+        await this.api.sendLog('Reddit', `Found ${redditLeads.length} leads`, redditLeads.length, 'success');
+        await this.api.sendLeadsBatch(redditLeads);
       }
 
       if (scrapeCraigslist) {
+        await this.api.sendLog('Craigslist', 'Scraping Craigslist...', 0, 'processing');
         const craigslistLeads = await scrapeCraigslistLeads(location);
         this.allLeads.push(...craigslistLeads);
+        await this.api.sendLog('Craigslist', `Found ${craigslistLeads.length} leads`, craigslistLeads.length, 'success');
+        await this.api.sendLeadsBatch(craigslistLeads);
       }
 
       if (scrapeTwitter) {
+        await this.api.sendLog('Twitter', 'Scraping Twitter/X...', 0, 'processing');
         const twitterLeads = await scrapeTwitterLeads(location);
         this.allLeads.push(...twitterLeads);
+        await this.api.sendLog('Twitter', `Found ${twitterLeads.length} leads`, twitterLeads.length, 'success');
+        await this.api.sendLeadsBatch(twitterLeads);
       }
 
       if (scrapeYelp) {
+        await this.api.sendLog('Yelp', 'Scraping Yelp Q&A...', 0, 'processing');
         const yelpLeads = await scrapeYelpLeads(location);
         this.allLeads.push(...yelpLeads);
+        await this.api.sendLog('Yelp', `Found ${yelpLeads.length} leads`, yelpLeads.length, 'success');
+        await this.api.sendLeadsBatch(yelpLeads);
       }
 
       if (scrapeQuora) {
+        await this.api.sendLog('Quora', 'Scraping Quora...', 0, 'processing');
         const quoraLeads = await scrapeQuoraLeads(location);
         this.allLeads.push(...quoraLeads);
+        await this.api.sendLog('Quora', `Found ${quoraLeads.length} leads`, quoraLeads.length, 'success');
+        await this.api.sendLeadsBatch(quoraLeads);
       }
 
       if (scrapeFacebook) {
+        await this.api.sendLog('Facebook', 'Scraping Facebook...', 0, 'processing');
         const facebookLeads = await scrapeFacebookLeads(location);
         this.allLeads.push(...facebookLeads);
+        await this.api.sendLog('Facebook', `Found ${facebookLeads.length} leads`, facebookLeads.length, 'success');
+        await this.api.sendLeadsBatch(facebookLeads);
       }
 
       if (scrapeNextdoor) {
+        await this.api.sendLog('Nextdoor', 'Scraping Nextdoor...', 0, 'processing');
         const nextdoorLeads = await scrapeNextdoorLeads(location);
         this.allLeads.push(...nextdoorLeads);
+        await this.api.sendLog('Nextdoor', `Found ${nextdoorLeads.length} leads`, nextdoorLeads.length, 'success');
+        await this.api.sendLeadsBatch(nextdoorLeads);
       }
+
+      // Mark session as completed
+      await this.api.completeSession('completed');
     } catch (error) {
       console.error('❌ Scraping error:', error.message);
+      await this.api.completeSession('failed', error.message);
     }
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);

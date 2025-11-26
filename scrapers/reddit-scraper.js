@@ -1,97 +1,95 @@
-import { chromium } from 'playwright';
-
 /**
  * Reddit Solar Lead Scraper
- * Finds real people asking about solar installation in specific locations
+ * Uses Reddit's JSON API to find real people asking about solar
  */
 export async function scrapeRedditLeads(location = 'Georgia') {
   console.log(`\n🔍 Searching Reddit for solar leads in ${location}...`);
 
-  const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({
-    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
-  });
-  const page = await context.newPage();
-
   const leads = [];
 
-  // Search queries that indicate intent to buy/hire OR need repair
+  // ONLY search for installation and repair (no research/general questions)
   const searches = [
-    // NEW INSTALLATION
+    // NEW INSTALLATION (people looking to hire)
+    `need solar installer ${location}`,
+    `looking for solar installer ${location}`,
     `solar installation ${location}`,
-    `solar installer recommendation ${location}`,
-    `solar panels ${location}`,
-    `need solar quote ${location}`,
+    `hire solar installer ${location}`,
     // REPAIR/TROUBLESHOOTING (VERY HOT!)
     `solar not working ${location}`,
-    `solar panel repair ${location}`,
-    `solar system broken ${location}`,
-    `solar troubleshooting ${location}`,
-    `solar inverter error ${location}`
+    `solar repair ${location}`,
+    `solar broken ${location}`,
+    `solar stopped working ${location}`
   ];
 
   for (const query of searches) {
     try {
-      const searchUrl = `https://www.reddit.com/search/?q=${encodeURIComponent(query)}&type=post&sort=new`;
       console.log(`  Checking: ${query}`);
 
-      await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
-      await page.waitForTimeout(2000); // Let content load
+      // Use Reddit's JSON API (much more reliable than scraping HTML)
+      const searchUrl = `https://www.reddit.com/search.json?q=${encodeURIComponent(query)}&sort=new&limit=25&t=month`;
 
-      // Extract posts
-      const posts = await page.evaluate(() => {
-        const results = [];
-        const postElements = document.querySelectorAll('[data-testid="post-container"]');
-
-        postElements.forEach((post, index) => {
-          if (index > 10) return; // Limit to first 10 posts per search
-
-          try {
-            // Get title
-            const titleEl = post.querySelector('h3, [slot="title"]');
-            const title = titleEl?.textContent?.trim() || '';
-
-            // Get author
-            const authorEl = post.querySelector('[data-testid="post_author_link"], a[href*="/user/"]');
-            const author = authorEl?.textContent?.trim()?.replace('u/', '') || '';
-
-            // Get subreddit
-            const subredditEl = post.querySelector('a[href*="/r/"]');
-            const subreddit = subredditEl?.textContent?.trim() || '';
-
-            // Get post URL
-            const linkEl = post.querySelector('a[data-click-id="body"]');
-            const postUrl = linkEl?.href || '';
-
-            // Get timestamp
-            const timeEl = post.querySelector('time');
-            const timestamp = timeEl?.getAttribute('datetime') || '';
-
-            // Check if it's a question/request (including repair/troubleshooting)
-            const isQuestion = /looking for|need|recommend|anyone know|help|advice|quote|cost|price|how much|not working|broken|repair|fix|troubleshoot|error|fault|inverter.*issue/i.test(title);
-
-            if (isQuestion && author && postUrl) {
-              results.push({
-                title,
-                author,
-                subreddit,
-                postUrl,
-                timestamp,
-              });
-            }
-          } catch (e) {
-            console.error('Error extracting post:', e.message);
-          }
-        });
-
-        return results;
+      const response = await fetch(searchUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+        }
       });
 
-      // Score and add to leads
-      posts.forEach(post => {
-        const message = post.title.toLowerCase();
-        const fullText = post.title;
-        let score = 0;
+      if (!response.ok) {
+        console.log(`    API error: ${response.status}`);
+        continue;
+      }
+
+      const data = await response.json();
+      const posts = data?.data?.children || [];
+
+      let foundCount = 0;
+
+      // Process each post
+      for (const item of posts) {
+        const post = item.data;
+
+        // Check if it's a question/request (including repair/troubleshooting)
+        const title = post.title || '';
+        const selftext = post.selftext || '';
+        const fullText = `${title} ${selftext}`;
+        const fullTextLower = fullText.toLowerCase();
+
+        // CRITICAL: Must mention solar PANELS/POWER/INSTALLATION (not just "solar system" as in space)
+        const hasSolarContext = /solar panel|solar power|solar energy|solar installation|solar installer|solar system installation|photovoltaic|pv system|solar array|solar roof/i.test(fullText);
+
+        if (!hasSolarContext) {
+          continue; // Skip posts about space, fiction, or unrelated "solar" mentions
+        }
+
+        // FILTER OUT BUSINESS ADS AND PROMOTIONAL CONTENT
+        const isBusinessAd = /we offer|our company|our team|our service|free estimate|call us|contact us|visit our|licensed and|certified|years of experience|family owned|serving|professional|check us out|dm for|pm for|click here|www\.|\.com|discount|promotion|special offer/i.test(fullText);
+
+        if (isBusinessAd) {
+          continue; // Skip business ads
+        }
+
+        // ONLY ACCEPT: Installation requests OR Repair requests
+        const isInstallationRequest = /looking for.*installer|need.*installer|hire.*installer|recommend.*installer|seeking.*installer|anyone install|who installs/i.test(fullText);
+        const isRepairRequest = /not working|broken|stopped working|no power|error|fault|failed|repair|fix|troubleshoot|inverter.*issue|panel.*issue|system.*down|offline/i.test(fullText);
+
+        // Must be ASKING for installation or repair (not offering services)
+        if (!isInstallationRequest && !isRepairRequest) {
+          continue;
+        }
+
+        // Skip deleted accounts
+        if (!post.author || post.author === '[deleted]') {
+          continue;
+        }
+
+        foundCount++;
+
+        // Extract location from post content
+        let extractedLocation = location; // Default to search location
+        const locationMatch = fullText.match(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*),?\s+(GA|Georgia|AL|Alabama|FL|Florida|TN|Tennessee|SC|South Carolina|NC|North Carolina)\b/);
+        if (locationMatch) {
+          extractedLocation = `${locationMatch[1]}, ${locationMatch[2]}`;
+        }
 
         // Extract phone number if included in post
         const phoneMatch = fullText.match(/(\d{3}[-.\s]?\d{3}[-.\s]?\d{4}|\(\d{3}\)\s*\d{3}[-.\s]?\d{4})/);
@@ -101,58 +99,76 @@ export async function scrapeRedditLeads(location = 'Georgia') {
         const emailMatch = fullText.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/);
         const email = emailMatch ? emailMatch[0] : '';
 
-        // REPAIR/TROUBLESHOOTING = EXTREMELY HOT (broken system = urgent need!)
-        if (/not working|broken|stopped working|no power|error|fault|failed/.test(message)) score += 40;
-        if (/repair|fix|troubleshoot|service|maintenance/.test(message)) score += 35;
-        if (/inverter|panel|system.*down|offline/.test(message)) score += 30;
-        if (/installer.*not responding|can't reach|won't answer/.test(message)) score += 25;
+        // Determine specific intent: ONLY Installation or Repair
+        let intent = 'Installation';
+        const messageText = fullText.toLowerCase();
 
-        // High intent keywords (new installation)
-        if (/quote|estimate|cost|price|how much/.test(message)) score += 30;
-        if (/need|looking for|hire/.test(message)) score += 20;
-        if (/urgent|asap|soon|immediately/.test(message)) score += 15;
-        if (/recommend|recommendation|best/.test(message)) score += 10;
-
-        // Recent posts
-        if (post.timestamp) {
-          const age = new Date() - new Date(post.timestamp);
-          const days = age / (1000 * 60 * 60 * 24);
-          if (days < 1) score += 20;
-          else if (days < 7) score += 10;
-          else if (days < 30) score += 5;
+        if (isRepairRequest) {
+          intent = 'Repair/Service';
+        } else if (isInstallationRequest) {
+          intent = 'Installation';
         }
 
-        const priority = score >= 50 ? 'Hot' : score >= 30 ? 'Warm' : 'Cold';
+        // Score the lead
+        let score = 0;
+
+        // REPAIR/TROUBLESHOOTING = EXTREMELY HOT (broken system = urgent need!)
+        if (/not working|broken|stopped working|no power|error|fault|failed/.test(messageText)) score += 40;
+        if (/repair|fix|troubleshoot|service|maintenance/.test(messageText)) score += 35;
+        if (/inverter|panel|system.*down|offline/.test(messageText)) score += 30;
+        if (/installer.*not responding|can't reach|won't answer/.test(messageText)) score += 25;
+
+        // High intent keywords (new installation)
+        if (/quote|estimate|cost|price|how much/.test(messageText)) score += 30;
+        if (/need|looking for|hire/.test(messageText)) score += 20;
+        if (/urgent|asap|soon|immediately/.test(messageText)) score += 15;
+        if (/recommend|recommendation|best/.test(messageText)) score += 10;
+
+        // Recent posts
+        const postTime = post.created_utc ? new Date(post.created_utc * 1000) : new Date();
+        const age = new Date() - postTime;
+        const days = age / (1000 * 60 * 60 * 24);
+        if (days < 1) score += 20;
+        else if (days < 7) score += 10;
+        else if (days < 30) score += 5;
 
         // BOOST SCORE if they included contact info (very hot!)
         if (phone) score += 20;
         if (email) score += 20;
 
+        const priority = score >= 50 ? 'Hot' : score >= 30 ? 'Warm' : 'Cold';
+
+        // Better name formatting
+        const displayName = phone || email
+          ? post.author // If they have contact info, show username
+          : `Contact via Reddit: u/${post.author}`;
+
         leads.push({
           source: 'Reddit',
-          platform: post.subreddit,
-          name: post.author,
-          location: location,
-          message: post.title,
+          platform: `r/${post.subreddit}`,
+          name: displayName,
+          location: extractedLocation,
+          message: title.substring(0, 500), // Limit message length
           profileUrl: `https://reddit.com/user/${post.author}`,
-          postUrl: post.postUrl,
-          timestamp: post.timestamp || new Date().toISOString(),
+          postUrl: `https://reddit.com${post.permalink}`,
+          timestamp: postTime.toISOString(),
           score,
           priority,
-          intent: score >= 50 ? 'High' : score >= 30 ? 'Medium' : 'Low',
+          intent,
           phone,
           email
         });
-      });
+      }
 
-      console.log(`    Found ${posts.length} potential leads`);
+      console.log(`    Found ${foundCount} potential leads`);
 
     } catch (error) {
       console.error(`  Error searching "${query}":`, error.message);
     }
-  }
 
-  await browser.close();
+    // Rate limit: Wait 1 second between searches
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
 
   console.log(`✅ Reddit scraping complete: ${leads.length} leads found`);
   return leads;
