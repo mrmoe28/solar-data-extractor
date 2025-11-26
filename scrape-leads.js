@@ -21,6 +21,23 @@ import 'dotenv/config';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Lock file to prevent concurrent scrapes
+const LOCK_FILE = path.join(__dirname, '.scraping.lock');
+const SCRAPER_TIMEOUT = 120000; // 120 seconds per scraper
+
+/**
+ * Timeout wrapper for scrapers
+ * Prevents scrapers from hanging indefinitely
+ */
+function withTimeout(promise, timeoutMs, scraperName) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(`Timeout: ${scraperName} exceeded ${timeoutMs}ms`)), timeoutMs)
+    ),
+  ]);
+}
+
 /**
  * Main Lead Generation Script
  * Orchestrates all scrapers and generates reports
@@ -47,8 +64,35 @@ class LeadGenerator {
     console.log('╚══════════════════════════════════════════════════════════════════╝');
     console.log('');
 
+    // Check for concurrent scrapes (lock file)
+    if (fs.existsSync(LOCK_FILE)) {
+      const lockData = JSON.parse(fs.readFileSync(LOCK_FILE, 'utf8'));
+      const lockAge = Date.now() - lockData.timestamp;
+
+      // If lock is older than 10 minutes, assume stale and remove
+      if (lockAge > 600000) {
+        console.log('⚠️  Found stale lock file (>10 min old). Removing...');
+        fs.unlinkSync(LOCK_FILE);
+      } else {
+        console.error('❌ ERROR: Another scrape is already running!');
+        console.error(`   Started: ${new Date(lockData.timestamp).toLocaleTimeString()}`);
+        console.error(`   Location: ${lockData.location}`);
+        console.error('   Please wait for it to complete or remove .scraping.lock file');
+        process.exit(1);
+      }
+    }
+
     // Get location from command line or default
     const location = process.argv[2] || 'Georgia';
+
+    // Create lock file
+    fs.writeFileSync(LOCK_FILE, JSON.stringify({
+      timestamp: Date.now(),
+      location,
+      pid: process.pid
+    }), 'utf8');
+    console.log('🔒 Lock file created');
+
     console.log(`📍 Target Location: ${location}`);
     console.log(`📅 Date: ${this.timestamp}`);
     console.log('');
@@ -95,45 +139,70 @@ class LeadGenerator {
       // HIGH-ROI: These are people already getting solar
       if (scrapePermits) {
         await this.api.sendLog('Permits', 'Starting permit scraper...', 0, 'processing');
-        const permitLeads = await scrapePermitLeads(location);
-        this.allLeads.push(...permitLeads);
-        await this.api.sendLog('Permits', `Found ${permitLeads.length} leads from permits`, permitLeads.length, 'success');
-        await this.api.sendLeadsBatch(permitLeads);
+        try {
+          const permitLeads = await withTimeout(scrapePermitLeads(location), SCRAPER_TIMEOUT, 'Permits');
+          this.allLeads.push(...permitLeads);
+          await this.api.sendLog('Permits', `Found ${permitLeads.length} leads from permits`, permitLeads.length, 'success');
+          await this.api.sendLeadsBatch(permitLeads);
+        } catch (error) {
+          console.error(`⚠️  Permits scraper error: ${error.message}`);
+          await this.api.sendLog('Permits', `Error: ${error.message}`, 0, 'error');
+        }
       }
 
       if (scrapeIncentives) {
         await this.api.sendLog('Incentives', 'Starting incentive scraper...', 0, 'processing');
-        const incentiveLeads = await scrapeIncentiveLeads(location);
-        this.allLeads.push(...incentiveLeads);
-        await this.api.sendLog('Incentives', `Found ${incentiveLeads.length} leads from incentives`, incentiveLeads.length, 'success');
-        await this.api.sendLeadsBatch(incentiveLeads);
+        try {
+          const incentiveLeads = await withTimeout(scrapeIncentiveLeads(location), SCRAPER_TIMEOUT, 'Incentives');
+          this.allLeads.push(...incentiveLeads);
+          await this.api.sendLog('Incentives', `Found ${incentiveLeads.length} leads from incentives`, incentiveLeads.length, 'success');
+          await this.api.sendLeadsBatch(incentiveLeads);
+        } catch (error) {
+          console.error(`⚠️  Incentives scraper error: ${error.message}`);
+          await this.api.sendLog('Incentives', `Error: ${error.message}`, 0, 'error');
+        }
       }
 
       // AI-Powered web search (Perplexity - searches billions of pages!)
       if (scrapePerplexity) {
         await this.api.sendLog('Perplexity', 'Searching web with Perplexity AI...', 0, 'processing');
-        const perplexityLeads = await scrapePerplexityLeads(location);
-        this.allLeads.push(...perplexityLeads);
-        await this.api.sendLog('Perplexity', `Found ${perplexityLeads.length} leads from Perplexity`, perplexityLeads.length, 'success');
-        await this.api.sendLeadsBatch(perplexityLeads);
+        try {
+          const perplexityLeads = await withTimeout(scrapePerplexityLeads(location), SCRAPER_TIMEOUT, 'Perplexity');
+          this.allLeads.push(...perplexityLeads);
+          await this.api.sendLog('Perplexity', `Found ${perplexityLeads.length} leads from Perplexity`, perplexityLeads.length, 'success');
+          await this.api.sendLeadsBatch(perplexityLeads);
+        } catch (error) {
+          console.error(`⚠️  Perplexity scraper error: ${error.message}`);
+          await this.api.sendLog('Perplexity', `Error: ${error.message}`, 0, 'error');
+        }
       }
 
       // Web search aggregator (Google Custom Search)
       if (scrapeWebSearch) {
         await this.api.sendLog('Web Search', 'Searching Google/Bing for solar leads...', 0, 'processing');
-        const webLeads = await scrapeWebSearchLeads(location);
-        this.allLeads.push(...webLeads);
-        await this.api.sendLog('Web Search', `Found ${webLeads.length} leads from web search`, webLeads.length, 'success');
-        await this.api.sendLeadsBatch(webLeads);
+        try {
+          const webLeads = await withTimeout(scrapeWebSearchLeads(location), SCRAPER_TIMEOUT, 'Web Search');
+          this.allLeads.push(...webLeads);
+          await this.api.sendLog('Web Search', `Found ${webLeads.length} leads from web search`, webLeads.length, 'success');
+          await this.api.sendLeadsBatch(webLeads);
+        } catch (error) {
+          console.error(`⚠️  Web Search scraper error: ${error.message}`);
+          await this.api.sendLog('Web Search', `Error: ${error.message}`, 0, 'error');
+        }
       }
 
       // Social media sources
       if (scrapeReddit) {
         await this.api.sendLog('Reddit', 'Scraping Reddit for solar leads...', 0, 'processing');
-        const redditLeads = await scrapeRedditLeads(location);
-        this.allLeads.push(...redditLeads);
-        await this.api.sendLog('Reddit', `Found ${redditLeads.length} leads`, redditLeads.length, 'success');
-        await this.api.sendLeadsBatch(redditLeads);
+        try {
+          const redditLeads = await withTimeout(scrapeRedditLeads(location), SCRAPER_TIMEOUT, 'Reddit');
+          this.allLeads.push(...redditLeads);
+          await this.api.sendLog('Reddit', `Found ${redditLeads.length} leads`, redditLeads.length, 'success');
+          await this.api.sendLeadsBatch(redditLeads);
+        } catch (error) {
+          console.error(`⚠️  Reddit scraper error: ${error.message}`);
+          await this.api.sendLog('Reddit', `Error: ${error.message}`, 0, 'error');
+        }
       }
 
       if (scrapeCityData) {
@@ -197,6 +266,12 @@ class LeadGenerator {
     } catch (error) {
       console.error('❌ Scraping error:', error.message);
       await this.api.completeSession('failed', error.message);
+    } finally {
+      // Always remove lock file when done
+      if (fs.existsSync(LOCK_FILE)) {
+        fs.unlinkSync(LOCK_FILE);
+        console.log('🔓 Lock file removed');
+      }
     }
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
