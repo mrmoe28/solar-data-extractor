@@ -10,7 +10,7 @@ echo "╚═══════════════════════�
 echo ""
 
 # Create cron job entry
-CRON_JOB="0 8 * * * cd $HOME/solar-data-extractor && ./daily-lead-automation.sh"
+CRON_JOB="0 8 * * * cd $HOME/Desktop/ekoleadgenerator/solar-data-extractor && ./daily-lead-automation.sh"
 
 echo "This will add a cron job to run lead generation daily at 8 AM."
 echo ""

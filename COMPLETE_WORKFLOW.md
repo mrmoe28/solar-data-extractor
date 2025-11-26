@@ -306,7 +306,7 @@ Run automatically every morning:
 
 ```bash
 # Add to crontab (runs at 8 AM daily)
-0 8 * * * cd ~/solar-data-extractor && ./daily-leads.sh
+0 8 * * * cd ~/Desktop/ekoleadgenerator/solar-data-extractor && ./daily-leads.sh
 ```
 
 Creates a script that:
@@ -476,7 +476,7 @@ Not all leads will have phone numbers posted. Priority order:
 
 ### Step 1: Test the System (5 minutes)
 ```bash
-cd ~/solar-data-extractor
+cd ~/Desktop/ekoleadgenerator/solar-data-extractor
 node scrapers/lead_to_form.js
 ```
 

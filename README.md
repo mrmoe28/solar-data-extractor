@@ -31,7 +31,7 @@ Built for **EkoSolarPros.com** - Dominate the Georgia solar market with intellig
 
 ```bash
 # Double-click the desktop icon OR run:
-cd ~/solar-data-extractor
+cd ~/Desktop/ekoleadgenerator/solar-data-extractor
 claude
 ```
 

@@ -5,8 +5,8 @@
 # Finds Georgia solar leads and auto-submits Hot ones to your form
 
 TIMESTAMP=$(date +"%Y-%m-%d-%H%M")
-LOG_FILE="$HOME/solar-data-extractor/output/daily-log-$TIMESTAMP.txt"
-OUTPUT_DIR="$HOME/solar-data-extractor/output"
+LOG_FILE="$HOME/Desktop/ekoleadgenerator/solar-data-extractor/output/daily-log-$TIMESTAMP.txt"
+OUTPUT_DIR="$HOME/Desktop/ekoleadgenerator/solar-data-extractor/output"
 
 mkdir -p "$OUTPUT_DIR"
 

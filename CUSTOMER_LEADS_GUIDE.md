@@ -21,7 +21,7 @@ These are **HOT LEADS** - people raising their hand saying "I need help with sol
 
 ### Step 1: Run the tool
 ```bash
-cd ~/solar-data-extractor
+cd ~/Desktop/ekoleadgenerator/solar-data-extractor
 ./solar-extractor.sh
 ```
 
@@ -38,7 +38,7 @@ cd ~/solar-data-extractor
 
 ### Step 6: Open the CSV file
 ```
-~/solar-data-extractor/output/customer-leads-2025-11-25.csv
+~/Desktop/ekoleadgenerator/solar-data-extractor/output/customer-leads-2025-11-25.csv
 ```
 
 **You now have a list of people actively looking for solar services!**
@@ -335,7 +335,7 @@ Monthly revenue: $75,000-$105,000
 
 ### Step 1: First Extraction (5 minutes)
 ```bash
-cd ~/solar-data-extractor
+cd ~/Desktop/ekoleadgenerator/solar-data-extractor
 ./solar-extractor.sh
 # Select option 1
 # Enter your city
@@ -409,7 +409,7 @@ A: Daily for best results. New leads appear every hour.
 
 Run this right now:
 ```bash
-cd ~/solar-data-extractor
+cd ~/Desktop/ekoleadgenerator/solar-data-extractor
 ./solar-extractor.sh
 ```
 

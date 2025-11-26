@@ -16,12 +16,12 @@ echo "Starting Claude Code in solar-data-extractor directory..."
 echo ""
 
 # Change to project directory
-cd ~/solar-data-extractor
+cd ~/Desktop/ekoleadgenerator/solar-data-extractor
 
 # Check if directory exists
 if [ ! -d "$(pwd)" ]; then
     echo "Error: solar-data-extractor directory not found!"
-    echo "Expected location: ~/solar-data-extractor"
+    echo "Expected location: ~/Desktop/ekoleadgenerator/solar-data-extractor"
     exit 1
 fi
 

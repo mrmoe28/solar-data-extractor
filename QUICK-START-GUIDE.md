@@ -73,7 +73,7 @@ Tell Claude:
 crontab -e
 
 # Add this line:
-0 8 * * * cd ~/solar-data-extractor && ./daily-lead-automation.sh
+0 8 * * * cd ~/Desktop/ekoleadgenerator/solar-data-extractor && ./daily-lead-automation.sh
 ```
 
 **What It Does:**
@@ -120,7 +120,7 @@ crontab -e
 
 ### Daily Reports
 ```
-~/solar-data-extractor/output/DAILY-LEAD-REPORT-YYYY-MM-DD.md
+~/Desktop/ekoleadgenerator/solar-data-extractor/output/DAILY-LEAD-REPORT-YYYY-MM-DD.md
 ```
 **What's in it:**
 - Executive summary
@@ -130,8 +130,8 @@ crontab -e
 
 ### Lead Data (CSV)
 ```
-~/solar-data-extractor/output/demo-georgia-leads-YYYY-MM-DD.csv
-~/solar-data-extractor/output/qualified-leads-for-submission-YYYY-MM-DD.csv
+~/Desktop/ekoleadgenerator/solar-data-extractor/output/demo-georgia-leads-YYYY-MM-DD.csv
+~/Desktop/ekoleadgenerator/solar-data-extractor/output/qualified-leads-for-submission-YYYY-MM-DD.csv
 ```
 **What's in it:**
 - All lead details
@@ -141,7 +141,7 @@ crontab -e
 
 ### Submission Log
 ```
-~/solar-data-extractor/output/form-submissions.csv
+~/Desktop/ekoleadgenerator/solar-data-extractor/output/form-submissions.csv
 ```
 **What's in it:**
 - Tracking of all auto-submissions
@@ -155,14 +155,14 @@ crontab -e
 ### System Not Working?
 ```bash
 # Test the system
-cd ~/solar-data-extractor
+cd ~/Desktop/ekoleadgenerator/solar-data-extractor
 node scrapers/lead_to_form.js
 ```
 
 ### Need to Update Scripts?
 ```bash
 # Pull latest from GitHub
-cd ~/solar-data-extractor
+cd ~/Desktop/ekoleadgenerator/solar-data-extractor
 git pull
 ```
 
@@ -175,7 +175,7 @@ npx playwright install
 ### Can't Find Desktop Icon?
 ```bash
 # Recreate it
-cd ~/solar-data-extractor
+cd ~/Desktop/ekoleadgenerator/solar-data-extractor
 cp Launch-Solar-Leads.command ~/Desktop/
 ```
 

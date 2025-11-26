@@ -109,7 +109,7 @@ I'll execute the full workflow and give you results.
 ### Option 3: Run the Script Yourself
 
 ```bash
-cd ~/solar-data-extractor
+cd ~/Desktop/ekoleadgenerator/solar-data-extractor
 ./daily-lead-automation.sh
 ```
 
@@ -391,7 +391,7 @@ Tell me: "Change target from Georgia to [new location]"
 
 ## 📁 File Locations
 
-All output goes to: `~/solar-data-extractor/output/`
+All output goes to: `~/Desktop/ekoleadgenerator/solar-data-extractor/output/`
 
 **Daily Files:**
 - `demo-georgia-leads-YYYY-MM-DD.csv` - All leads
@@ -400,9 +400,9 @@ All output goes to: `~/solar-data-extractor/output/`
 - `form-submissions.csv` - Submission log (cumulative)
 
 **Automation Scripts:**
-- `~/solar-data-extractor/daily-lead-automation.sh`
-- `~/solar-data-extractor/scrapers/customer_leads.js`
-- `~/solar-data-extractor/scrapers/lead_to_form.js`
+- `~/Desktop/ekoleadgenerator/solar-data-extractor/daily-lead-automation.sh`
+- `~/Desktop/ekoleadgenerator/solar-data-extractor/scrapers/customer_leads.js`
+- `~/Desktop/ekoleadgenerator/solar-data-extractor/scrapers/lead_to_form.js`
 
 ---
 

@@ -231,19 +231,19 @@ Intent Level: Urgent
 ## 📁 Files Generated
 
 1. **All Leads CSV:**
-   `/Users/ekodevapps/solar-data-extractor/output/demo-georgia-leads-2025-11-25.csv`
+   `/Users/ekodevapps/Desktop/ekoleadgenerator/solar-data-extractor/output/demo-georgia-leads-2025-11-25.csv`
    Complete list of all 15 leads extracted
 
 2. **Qualified Leads CSV:**
-   `/Users/ekodevapps/solar-data-extractor/output/qualified-leads-for-submission-2025-11-25.csv`
+   `/Users/ekodevapps/Desktop/ekoleadgenerator/solar-data-extractor/output/qualified-leads-for-submission-2025-11-25.csv`
    13 leads that met auto-submission criteria
 
 3. **Playwright Submission Script:**
-   `/Users/ekodevapps/solar-data-extractor/output/playwright-submission-script.js`
+   `/Users/ekodevapps/Desktop/ekoleadgenerator/solar-data-extractor/output/playwright-submission-script.js`
    Auto-generated form submission automation
 
 4. **This Report:**
-   `/Users/ekodevapps/solar-data-extractor/output/DAILY-LEAD-REPORT-2025-11-25.md`
+   `/Users/ekodevapps/Desktop/ekoleadgenerator/solar-data-extractor/output/DAILY-LEAD-REPORT-2025-11-25.md`
 
 ---
 

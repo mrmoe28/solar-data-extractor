@@ -4,12 +4,12 @@
 
 **All leads are saved in:**
 ```
-~/solar-data-extractor/output/
+~/Desktop/ekoleadgenerator/solar-data-extractor/output/
 ```
 
 **Full path:**
 ```
-/Users/ekodevapps/solar-data-extractor/output/
+/Users/ekodevapps/Desktop/ekoleadgenerator/solar-data-extractor/output/
 ```
 
 ---
@@ -149,7 +149,7 @@ LIVE-MARKET-INTELLIGENCE-YYYY-MM-DD.md
 ## 🗂️ Complete File Structure
 
 ```
-~/solar-data-extractor/output/
+~/Desktop/ekoleadgenerator/solar-data-extractor/output/
 │
 ├── demo-georgia-leads-2025-11-25.csv
 │   └── ALL leads found (15 total)
@@ -178,7 +178,7 @@ LIVE-MARKET-INTELLIGENCE-YYYY-MM-DD.md
 
 1. Open **Finder**
 2. Press **Cmd + Shift + G**
-3. Type: `~/solar-data-extractor/output`
+3. Type: `~/Desktop/ekoleadgenerator/solar-data-extractor/output`
 4. Press **Enter**
 
 You'll see all your lead files!
@@ -189,13 +189,13 @@ You'll see all your lead files!
 
 ```bash
 # Open the folder
-open ~/solar-data-extractor/output
+open ~/Desktop/ekoleadgenerator/solar-data-extractor/output
 
 # List all files
-ls -lh ~/solar-data-extractor/output
+ls -lh ~/Desktop/ekoleadgenerator/solar-data-extractor/output
 
 # View today's leads
-open ~/solar-data-extractor/output/demo-georgia-leads-*.csv
+open ~/Desktop/ekoleadgenerator/solar-data-extractor/output/demo-georgia-leads-*.csv
 ```
 
 ---
@@ -204,7 +204,7 @@ open ~/solar-data-extractor/output/demo-georgia-leads-*.csv
 
 1. Open **Excel**
 2. File → Import
-3. Navigate to: `~/solar-data-extractor/output`
+3. Navigate to: `~/Desktop/ekoleadgenerator/solar-data-extractor/output`
 4. Select: `demo-georgia-leads-2025-11-25.csv`
 5. Import!
 
@@ -286,7 +286,7 @@ demo-georgia-leads-2025-11-27.csv
 
 1. **Local Computer**
    ```
-   ~/solar-data-extractor/output/
+   ~/Desktop/ekoleadgenerator/solar-data-extractor/output/
    ```
 
 2. **GitHub Repository**
@@ -323,22 +323,22 @@ cat output/DAILY-LEAD-REPORT-*.md | mail -s "Daily Solar Leads" your@email.com
 
 **By Name:**
 ```bash
-grep "Lisa Davis" ~/solar-data-extractor/output/*.csv
+grep "Lisa Davis" ~/Desktop/ekoleadgenerator/solar-data-extractor/output/*.csv
 ```
 
 **By Location:**
 ```bash
-grep "Roswell" ~/solar-data-extractor/output/*.csv
+grep "Roswell" ~/Desktop/ekoleadgenerator/solar-data-extractor/output/*.csv
 ```
 
 **By Score (Hot leads only):**
 ```bash
-grep ",Hot," ~/solar-data-extractor/output/*.csv
+grep ",Hot," ~/Desktop/ekoleadgenerator/solar-data-extractor/output/*.csv
 ```
 
 **By Phone (has phone number):**
 ```bash
-grep "([0-9]" ~/solar-data-extractor/output/*.csv
+grep "([0-9]" ~/Desktop/ekoleadgenerator/solar-data-extractor/output/*.csv
 ```
 
 ---
@@ -350,13 +350,13 @@ Want leads on your mobile device?
 ### Method 1: Email CSV to Yourself
 ```bash
 # From terminal
-echo "Today's leads attached" | mail -s "Solar Leads" -a ~/solar-data-extractor/output/qualified-leads-*.csv your@email.com
+echo "Today's leads attached" | mail -s "Solar Leads" -a ~/Desktop/ekoleadgenerator/solar-data-extractor/output/qualified-leads-*.csv your@email.com
 ```
 
 ### Method 2: iCloud Drive
 ```bash
 # Copy to iCloud
-cp ~/solar-data-extractor/output/*.csv ~/Library/Mobile\ Documents/com~apple~CloudDocs/Solar-Leads/
+cp ~/Desktop/ekoleadgenerator/solar-data-extractor/output/*.csv ~/Library/Mobile\ Documents/com~apple~CloudDocs/Solar-Leads/
 ```
 
 Now access from iPhone/iPad!
@@ -368,20 +368,20 @@ Now access from iPhone/iPad!
 ### Tip 1: Create a Daily Folder
 ```bash
 # Organize by week
-mkdir -p ~/solar-data-extractor/output/week-of-2025-11-25
-mv ~/solar-data-extractor/output/*2025-11-2[5-9]* ~/solar-data-extractor/output/week-of-2025-11-25/
+mkdir -p ~/Desktop/ekoleadgenerator/solar-data-extractor/output/week-of-2025-11-25
+mv ~/Desktop/ekoleadgenerator/solar-data-extractor/output/*2025-11-2[5-9]* ~/Desktop/ekoleadgenerator/solar-data-extractor/output/week-of-2025-11-25/
 ```
 
 ### Tip 2: Backup to Dropbox
 ```bash
 # Auto-backup to Dropbox
-cp ~/solar-data-extractor/output/*.csv ~/Dropbox/Solar-Leads/
+cp ~/Desktop/ekoleadgenerator/solar-data-extractor/output/*.csv ~/Dropbox/Solar-Leads/
 ```
 
 ### Tip 3: Quick View Today's Leads
 ```bash
 # Add to ~/.zshrc or ~/.bash_profile
-alias leads="open ~/solar-data-extractor/output/qualified-leads-$(date +%Y-%m-%d).csv"
+alias leads="open ~/Desktop/ekoleadgenerator/solar-data-extractor/output/qualified-leads-$(date +%Y-%m-%d).csv"
 ```
 
 Then just type: `leads`
@@ -389,7 +389,7 @@ Then just type: `leads`
 ### Tip 4: Print Call List
 ```bash
 # Open qualified leads in Excel and print
-open ~/solar-data-extractor/output/qualified-leads-*.csv
+open ~/Desktop/ekoleadgenerator/solar-data-extractor/output/qualified-leads-*.csv
 # File → Print → Done!
 ```
 
@@ -427,14 +427,14 @@ DAILY-LEAD-REPORT-2025-11-26.md
 
 **8:05 AM** - You open:
 ```bash
-open ~/solar-data-extractor/output/DAILY-LEAD-REPORT-2025-11-26.md
+open ~/Desktop/ekoleadgenerator/solar-data-extractor/output/DAILY-LEAD-REPORT-2025-11-26.md
 ```
 
 Read top 5 hottest leads.
 
 **8:10 AM** - You open:
 ```bash
-open ~/solar-data-extractor/output/qualified-leads-2025-11-26.csv
+open ~/Desktop/ekoleadgenerator/solar-data-extractor/output/qualified-leads-2025-11-26.csv
 ```
 
 Sort by Score (highest first).
@@ -447,7 +447,7 @@ Sort by Score (highest first).
 
 **Leads are stored at:**
 ```
-~/solar-data-extractor/output/
+~/Desktop/ekoleadgenerator/solar-data-extractor/output/
 ```
 
 **File types:**
@@ -456,8 +456,8 @@ Sort by Score (highest first).
 - `.js` = Automation scripts
 
 **Access methods:**
-- Finder: Cmd+Shift+G → `~/solar-data-extractor/output`
-- Terminal: `open ~/solar-data-extractor/output`
+- Finder: Cmd+Shift+G → `~/Desktop/ekoleadgenerator/solar-data-extractor/output`
+- Terminal: `open ~/Desktop/ekoleadgenerator/solar-data-extractor/output`
 - Excel: File → Import
 - Google Sheets: File → Import → Upload
 
@@ -472,17 +472,17 @@ Sort by Score (highest first).
 
 **Check if they exist:**
 ```bash
-ls -lh ~/solar-data-extractor/output/
+ls -lh ~/Desktop/ekoleadgenerator/solar-data-extractor/output/
 ```
 
 **Create output directory if missing:**
 ```bash
-mkdir -p ~/solar-data-extractor/output
+mkdir -p ~/Desktop/ekoleadgenerator/solar-data-extractor/output
 ```
 
 **View most recent leads:**
 ```bash
-open ~/solar-data-extractor/output/
+open ~/Desktop/ekoleadgenerator/solar-data-extractor/output/
 ```
 
 **Ask Claude:**
