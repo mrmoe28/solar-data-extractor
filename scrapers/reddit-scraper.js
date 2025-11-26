@@ -217,21 +217,27 @@ export async function scrapeRedditLeads(location = 'Georgia') {
         else if (days < 7) score += 10;
         else if (days < 30) score += 5;
 
-        // CRITICAL: Skip leads without contact info (phone OR email required)
-        if (!phone && !email) {
-          continue; // Can't reach them, skip this lead
-        }
-
         // BOOST SCORE if they included contact info (very hot!)
         if (phone) score += 20;
         if (email) score += 20;
+
+        // Determine contact method
+        let contactMethod = '';
+        if (phone) {
+          contactMethod = 'Phone';
+        } else if (email) {
+          contactMethod = 'Email';
+        } else {
+          contactMethod = 'Reddit DM';
+          // Reddit DM leads still valuable - they'll respond to outreach
+        }
 
         const priority = score >= 50 ? 'Hot' : score >= 30 ? 'Warm' : 'Cold';
 
         // Better name formatting
         const displayName = phone || email
           ? post.author // If they have contact info, show username
-          : `Contact via Reddit: u/${post.author}`;
+          : `u/${post.author}`;
 
         leads.push({
           source: 'Reddit',
@@ -245,8 +251,9 @@ export async function scrapeRedditLeads(location = 'Georgia') {
           score,
           priority,
           intent,
-          phone,
-          email
+          phone: phone || `DM: u/${post.author}`,
+          email: email || '',
+          contactMethod
         });
       }
 
