@@ -1,29 +1,35 @@
 #!/bin/bash
 
-# Send Email Notification for Hot Solar Leads via Mail.app
-# Works reliably on macOS using AppleScript
+# Send Email Notification for Hot Solar Leads via Gmail SMTP
+# Sends directly via Gmail (no Apple Mail.app required)
 
 EMAIL_TO="ekosolarize@gmail.com"
 EMAIL_SUBJECT="🔥 Hot New Lead - Solar Installation"
 PROJECT_DIR="$HOME/Desktop/ekoleadgenerator/solar-data-extractor"
 OUTPUT_DIR="$PROJECT_DIR/output"
+GMAIL_SENDER="$PROJECT_DIR/send-gmail.py"
 
-# Function to send email via Mail.app
-send_email_via_mailapp() {
+# Function to send email via Gmail SMTP
+send_email_via_gmail() {
     local subject="$1"
     local body="$2"
     local recipient="$3"
 
-    # Create AppleScript to send email
-    osascript <<EOF
-tell application "Mail"
-    set newMessage to make new outgoing message with properties {subject:"${subject}", content:"${body}", visible:false}
-    tell newMessage
-        make new to recipient with properties {address:"${recipient}"}
-    end tell
-    send newMessage
-end tell
-EOF
+    # Check if Gmail is configured
+    if [ ! -f "$PROJECT_DIR/.gmail-config" ]; then
+        echo "⚠️  Gmail not configured yet!"
+        echo ""
+        echo "Please run: ./setup-gmail.sh"
+        echo ""
+        return 1
+    fi
+
+    # Send via Gmail SMTP using Python script
+    if "$GMAIL_SENDER" "$recipient" "$subject" "$body"; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 # Function to create email for a Hot lead
@@ -75,7 +81,7 @@ EOF
 }
 
 echo "╔════════════════════════════════════════════════════════════════╗"
-echo "║        Hot Lead Email Notification via Mail.app              ║"
+echo "║        Hot Lead Email Notification via Gmail SMTP            ║"
 echo "║        Email: ekosolarize@gmail.com                           ║"
 echo "╚════════════════════════════════════════════════════════════════╝"
 echo ""
@@ -97,8 +103,8 @@ if [ -z "$LATEST_CSV" ]; then
         "85" \
         "Nextdoor - East Cobb")
 
-    echo "📧 Sending test email via Mail.app..."
-    send_email_via_mailapp "$EMAIL_SUBJECT (TEST)" "$TEST_BODY" "$EMAIL_TO"
+    echo "📧 Sending test email via Gmail SMTP..."
+    send_email_via_gmail "$EMAIL_SUBJECT (TEST)" "$TEST_BODY" "$EMAIL_TO"
 
     echo ""
     echo "✅ Test email sent automatically!"
@@ -134,7 +140,7 @@ if [ "$HOT_COUNT" -eq 0 ]; then
             "99" \
             "Test System")
 
-        send_email_via_mailapp "$EMAIL_SUBJECT (TEST)" "$TEST_BODY" "$EMAIL_TO"
+        send_email_via_gmail "$EMAIL_SUBJECT (TEST)" "$TEST_BODY" "$EMAIL_TO"
         echo "✅ Test email sent automatically!"
     fi
 else
@@ -167,7 +173,7 @@ else
             "HOT" \
             "$source")
 
-        send_email_via_mailapp "$EMAIL_SUBJECT" "$EMAIL_BODY" "$EMAIL_TO"
+        send_email_via_gmail "$EMAIL_SUBJECT" "$EMAIL_BODY" "$EMAIL_TO"
         echo "✅ Email sent automatically!"
     fi
 fi
