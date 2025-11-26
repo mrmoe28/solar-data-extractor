@@ -10,6 +10,7 @@ import { scrapeNextdoorLeads } from './scrapers/nextdoor-scraper.js';
 import { scrapePermitLeads } from './scrapers/permit-scraper.js';
 import { scrapeIncentiveLeads } from './scrapers/incentive-scraper.js';
 import { scrapeWebSearchLeads } from './scrapers/web-search-scraper.js';
+import { scrapePerplexityLeads } from './scrapers/perplexity-scraper.js';
 import { DashboardAPIClient } from './dashboard-api-client.js';
 import fs from 'fs';
 import path from 'path';
@@ -54,6 +55,7 @@ class LeadGenerator {
     // Ask which platforms to scrape
     const scrapePermits = true; // HIGH-ROI: People who got solar permits
     const scrapeIncentives = true; // HIGH-ROI: People applying for rebates
+    const scrapePerplexity = true; // AI-POWERED: Searches entire web with AI filtering
     const scrapeWebSearch = true; // NEW: Web search aggregator (Google, Bing, etc.)
     const scrapeReddit = true; // Default: always scrape Reddit (no login required)
     const scrapeCraigslist = true; // Default: always scrape Craigslist (no login required)
@@ -67,8 +69,9 @@ class LeadGenerator {
     console.log(`\n🔥 HIGH-ROI SOURCES (People Already Getting Solar):`);
     console.log(`  ${scrapePermits ? '✅' : '❌'} County Building Permits`);
     console.log(`  ${scrapeIncentives ? '✅' : '❌'} Solar Incentive/Rebate Programs`);
-    console.log(`\n🌐 WEB SEARCH (AI-Powered Aggregation):`);
-    console.log(`  ${scrapeWebSearch ? '✅' : '❌'} Google/Bing Search (finds leads across ALL sites)`);
+    console.log(`\n🤖 AI-POWERED WEB SEARCH:`);
+    console.log(`  ${scrapePerplexity ? '✅' : '❌'} Perplexity AI (searches billions of pages with AI filtering)`);
+    console.log(`  ${scrapeWebSearch ? '✅' : '❌'} Google Custom Search (100/day free)`);
     console.log(`\n📱 SOCIAL MEDIA SOURCES:`);
     console.log(`  ${scrapeReddit ? '✅' : '❌'} Reddit`);
     console.log(`  ${scrapeCraigslist ? '✅' : '❌'} Craigslist`);
@@ -103,7 +106,16 @@ class LeadGenerator {
         await this.api.sendLeadsBatch(incentiveLeads);
       }
 
-      // Web search aggregator (finds leads across ALL sites!)
+      // AI-Powered web search (Perplexity - searches billions of pages!)
+      if (scrapePerplexity) {
+        await this.api.sendLog('Perplexity', 'Searching web with Perplexity AI...', 0, 'processing');
+        const perplexityLeads = await scrapePerplexityLeads(location);
+        this.allLeads.push(...perplexityLeads);
+        await this.api.sendLog('Perplexity', `Found ${perplexityLeads.length} leads from Perplexity`, perplexityLeads.length, 'success');
+        await this.api.sendLeadsBatch(perplexityLeads);
+      }
+
+      // Web search aggregator (Google Custom Search)
       if (scrapeWebSearch) {
         await this.api.sendLog('Web Search', 'Searching Google/Bing for solar leads...', 0, 'processing');
         const webLeads = await scrapeWebSearchLeads(location);
