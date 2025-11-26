@@ -65,6 +65,12 @@ OUTPUT:
 - Save all leads to: $OUTPUT_DIR/leads-$TIMESTAMP.csv
 - Save submitted leads to: $OUTPUT_DIR/submitted-$TIMESTAMP.csv
 - Generate summary report
+- Send text notifications for Hot leads to: 404-551-6532
+
+NOTIFICATIONS:
+After lead generation completes:
+1. Run: ./send-text-notification.sh (opens Messages with Hot lead alerts)
+2. Run: ./send-email-notification.sh (optional backup notification)
 
 Please execute this automation now.
 AUTOMATION_PROMPT
@@ -80,7 +86,8 @@ echo "NOTE: This script coordinates with Claude Code to:" | tee -a "$LOG_FILE"
 echo "  1. Search all platforms for Georgia solar leads" | tee -a "$LOG_FILE"
 echo "  2. Extract and score each lead" | tee -a "$LOG_FILE"
 echo "  3. Auto-submit qualified leads to your form" | tee -a "$LOG_FILE"
-echo "  4. Email you a daily summary" | tee -a "$LOG_FILE"
+echo "  4. Send text alerts for Hot leads to 404-551-6532" | tee -a "$LOG_FILE"
+echo "  5. Email you a daily summary (optional)" | tee -a "$LOG_FILE"
 echo "" | tee -a "$LOG_FILE"
 
 # Display the prompt for Claude
