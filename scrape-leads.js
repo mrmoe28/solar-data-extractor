@@ -9,6 +9,7 @@ import { scrapeQuoraLeads } from './scrapers/quora-scraper.js';
 import { scrapeNextdoorLeads } from './scrapers/nextdoor-scraper.js';
 import { scrapePermitLeads } from './scrapers/permit-scraper.js';
 import { scrapeIncentiveLeads } from './scrapers/incentive-scraper.js';
+import { scrapeWebSearchLeads } from './scrapers/web-search-scraper.js';
 import { DashboardAPIClient } from './dashboard-api-client.js';
 import fs from 'fs';
 import path from 'path';
@@ -53,6 +54,7 @@ class LeadGenerator {
     // Ask which platforms to scrape
     const scrapePermits = true; // HIGH-ROI: People who got solar permits
     const scrapeIncentives = true; // HIGH-ROI: People applying for rebates
+    const scrapeWebSearch = true; // NEW: Web search aggregator (Google, Bing, etc.)
     const scrapeReddit = true; // Default: always scrape Reddit (no login required)
     const scrapeCraigslist = true; // Default: always scrape Craigslist (no login required)
     const scrapeTwitter = true; // Default: always scrape Twitter (no login required)
@@ -65,6 +67,8 @@ class LeadGenerator {
     console.log(`\n🔥 HIGH-ROI SOURCES (People Already Getting Solar):`);
     console.log(`  ${scrapePermits ? '✅' : '❌'} County Building Permits`);
     console.log(`  ${scrapeIncentives ? '✅' : '❌'} Solar Incentive/Rebate Programs`);
+    console.log(`\n🌐 WEB SEARCH (AI-Powered Aggregation):`);
+    console.log(`  ${scrapeWebSearch ? '✅' : '❌'} Google/Bing Search (finds leads across ALL sites)`);
     console.log(`\n📱 SOCIAL MEDIA SOURCES:`);
     console.log(`  ${scrapeReddit ? '✅' : '❌'} Reddit`);
     console.log(`  ${scrapeCraigslist ? '✅' : '❌'} Craigslist`);
@@ -97,6 +101,15 @@ class LeadGenerator {
         this.allLeads.push(...incentiveLeads);
         await this.api.sendLog('Incentives', `Found ${incentiveLeads.length} leads from incentives`, incentiveLeads.length, 'success');
         await this.api.sendLeadsBatch(incentiveLeads);
+      }
+
+      // Web search aggregator (finds leads across ALL sites!)
+      if (scrapeWebSearch) {
+        await this.api.sendLog('Web Search', 'Searching Google/Bing for solar leads...', 0, 'processing');
+        const webLeads = await scrapeWebSearchLeads(location);
+        this.allLeads.push(...webLeads);
+        await this.api.sendLog('Web Search', `Found ${webLeads.length} leads from web search`, webLeads.length, 'success');
+        await this.api.sendLeadsBatch(webLeads);
       }
 
       // Social media sources

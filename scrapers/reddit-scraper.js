@@ -7,19 +7,54 @@ export async function scrapeRedditLeads(location = 'Georgia') {
 
   const leads = [];
 
-  // ONLY search for installation and repair (no research/general questions)
-  const searches = [
+  // Expand searches to include major Georgia cities + state-wide
+  const locations = [location];
+
+  // Add major Georgia cities if searching state-wide
+  if (location.toLowerCase() === 'georgia') {
+    locations.push('Atlanta', 'Savannah', 'Augusta', 'Columbus', 'Macon', 'Athens', 'Sandy Springs', 'Roswell', 'Albany', 'Johns Creek');
+  }
+
+  const searchTemplates = [
     // NEW INSTALLATION (people looking to hire)
-    `need solar installer ${location}`,
-    `looking for solar installer ${location}`,
-    `solar installation ${location}`,
-    `hire solar installer ${location}`,
+    `need solar installer`,
+    `looking for solar installer`,
+    `solar installation`,
+    `hire solar installer`,
     // REPAIR/TROUBLESHOOTING (VERY HOT!)
-    `solar not working ${location}`,
-    `solar repair ${location}`,
-    `solar broken ${location}`,
-    `solar stopped working ${location}`
+    `solar not working`,
+    `solar repair`,
+    `solar broken`,
+    `solar stopped working`
   ];
+
+  // Generate searches for all locations
+  const searches = [];
+  for (const loc of locations) {
+    for (const template of searchTemplates) {
+      searches.push(`${template} ${loc}`);
+    }
+  }
+
+  // Also search location-specific subreddits
+  const locationSubreddits = [
+    'r/Atlanta',
+    'r/Georgia',
+    'r/Savannah',
+    'r/Augusta',
+    'r/Athens',
+    'r/solar',
+    'r/SolarDIY',
+    'r/solarenergy',
+    'r/homeimprovement',
+    'r/HomeOwners'
+  ];
+
+  // Add subreddit-specific searches (use Reddit's subreddit search)
+  for (const subreddit of locationSubreddits) {
+    searches.push(`solar installer ${location} subreddit:${subreddit.replace('r/', '')}`);
+    searches.push(`solar repair ${location} subreddit:${subreddit.replace('r/', '')}`);
+  }
 
   for (const query of searches) {
     try {

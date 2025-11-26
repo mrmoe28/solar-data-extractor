@@ -1,25 +1,40 @@
-# 🚀 Automatic Setup - One Command!
+# 🚀 Automatic Setup & Usage - One Command!
 
 ## Quick Start (Easiest)
 
-### Option 1: Double-Click Setup (Mac)
+### Step 1: Setup (One-Time)
+
+**Option A: Double-Click Setup (Mac)**
 1. **Double-click** `setup.command`
 2. Wait for setup to complete
 3. Done! Ready to scrape.
 
-### Option 2: Terminal Command
+**Option B: Terminal Command**
 ```bash
 cd solar-data-extractor
 ./setup.sh
 ```
 
-That's it! The script automatically:
+The setup script automatically:
 - ✅ Checks Node.js installation
 - ✅ Installs npm packages
 - ✅ Creates `.env` file with correct settings
 - ✅ Installs Playwright browsers
 - ✅ Tests dashboard connection
 - ✅ Shows you what to do next
+
+### Step 2: Start Scraping
+
+**Option A: One-Click Dashboard Trigger (Recommended)**
+1. **Double-click** `Start-Watcher.command` (Mac) OR run `./start-watcher.sh`
+2. Go to dashboard: https://eko-lead-dashboard.vercel.app/scraping
+3. Click "Start Scraping" with your location
+4. Watch real-time progress!
+
+**Option B: Manual CLI**
+```bash
+npm run scrape Georgia
+```
 
 ---
 
