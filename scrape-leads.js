@@ -14,6 +14,7 @@ import { scrapePerplexityLeads } from './scrapers/perplexity-scraper.js';
 import { scrapeCityDataLeads } from './scrapers/city-data-scraper.js';
 import { scrapeYouTubeLeads } from './scrapers/youtube-scraper.js';
 import { DashboardAPIClient } from './dashboard-api-client.js';
+import GoogleSheetsIntegration from './google-sheets-integration.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -302,6 +303,9 @@ class LeadGenerator {
     const csvPath = this.saveToCSV();
     const reportPath = this.generateReport();
 
+    // Sync to Google Sheets
+    await this.syncToGoogleSheets(csvPath);
+
     // Summary
     console.log('╔══════════════════════════════════════════════════════════════════╗');
     console.log('║                        ✅ COMPLETE                                ║');
@@ -424,6 +428,29 @@ class LeadGenerator {
 
     console.log(`✅ Report saved: ${filename}`);
     return filepath;
+  }
+
+  async syncToGoogleSheets(csvPath) {
+    try {
+      console.log('\n📊 Syncing to Google Sheets...');
+      const integration = new GoogleSheetsIntegration();
+
+      const authorized = await integration.authorize();
+      if (!authorized) {
+        console.log('⚠️  Google Sheets not configured. Skipping sync.');
+        console.log('💡 To enable, run: ./setup-google-sheets-api.sh');
+        return;
+      }
+
+      const spreadsheetId = await integration.getOrCreateSpreadsheet();
+      const count = await integration.appendLeads(spreadsheetId, csvPath);
+
+      console.log(`✅ Synced ${count} leads to Google Sheets!`);
+      console.log(`🔗 View: https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`);
+    } catch (error) {
+      console.error('⚠️  Google Sheets sync failed:', error.message);
+      console.log('   Leads saved to CSV. You can manually upload if needed.');
+    }
   }
 
   escapeCsv(value) {
