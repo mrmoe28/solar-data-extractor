@@ -17,11 +17,11 @@ const __dirname = path.dirname(__filename);
 
 // Your contact information (customize this)
 const YOUR_CONTACT_INFO = {
-  name: 'Your Name',
-  company: 'Your Solar Company',
-  phone: '(XXX) XXX-XXXX',
-  email: 'your.email@example.com',
-  website: 'https://yourcompany.com'
+  name: 'Moe',
+  company: 'EKO SOLAR',
+  phone: '404-551-6532',
+  email: 'ekosolarize@gmail.com',
+  website: 'www.ekosolarpros.com'
 };
 
 /**
