@@ -12,6 +12,7 @@ import { scrapeIncentiveLeads } from './scrapers/incentive-scraper.js';
 import { scrapeWebSearchLeads } from './scrapers/web-search-scraper.js';
 import { scrapePerplexityLeads } from './scrapers/perplexity-scraper.js';
 import { scrapeCityDataLeads } from './scrapers/city-data-scraper.js';
+import { scrapeYouTubeLeads } from './scrapers/youtube-scraper.js';
 import { DashboardAPIClient } from './dashboard-api-client.js';
 import fs from 'fs';
 import path from 'path';
@@ -102,6 +103,7 @@ class LeadGenerator {
     const scrapeIncentives = true; // HIGH-ROI: People applying for rebates
     const scrapePerplexity = true; // AI-POWERED: Searches entire web with AI filtering (needs API key)
     const scrapeWebSearch = true; // Web search aggregator (needs Google Search Engine ID)
+    const scrapeYouTube = true; // FREE: Finds people asking for help in video comments
     const scrapeReddit = true; // ✅ WORKING: Uses JSON API (no anti-bot blocking)
     const scrapeCityData = false; // ❌ DISABLED: RSS feed returns 404 error
     const scrapeCraigslist = false; // ❌ DISABLED: Returns 403 Forbidden
@@ -118,6 +120,7 @@ class LeadGenerator {
     console.log(`\n🤖 AI-POWERED WEB SEARCH:`);
     console.log(`  ${scrapePerplexity ? '✅' : '❌'} Perplexity AI (searches billions of pages with AI filtering)`);
     console.log(`  ${scrapeWebSearch ? '✅' : '❌'} Google Custom Search (100/day free)`);
+    console.log(`  ${scrapeYouTube ? '✅' : '❌'} YouTube Comments (10,000 requests/day free)`);
     console.log(`\n📱 SOCIAL MEDIA & COMMUNITY SOURCES:`);
     console.log(`  ${scrapeReddit ? '✅' : '❌'} Reddit`);
     console.log(`  ${scrapeCityData ? '✅' : '❌'} City-Data Forums (local community discussions)`);
@@ -188,6 +191,20 @@ class LeadGenerator {
         } catch (error) {
           console.error(`⚠️  Web Search scraper error: ${error.message}`);
           await this.api.sendLog('Web Search', `Error: ${error.message}`, 0, 'error');
+        }
+      }
+
+      // YouTube Comments (FREE tier: 10,000 requests/day)
+      if (scrapeYouTube) {
+        await this.api.sendLog('YouTube', 'Searching YouTube video comments...', 0, 'processing');
+        try {
+          const youtubeLeads = await withTimeout(scrapeYouTubeLeads(location), SCRAPER_TIMEOUT, 'YouTube');
+          this.allLeads.push(...youtubeLeads);
+          await this.api.sendLog('YouTube', `Found ${youtubeLeads.length} leads from YouTube`, youtubeLeads.length, 'success');
+          await this.api.sendLeadsBatch(youtubeLeads);
+        } catch (error) {
+          console.error(`⚠️  YouTube scraper error: ${error.message}`);
+          await this.api.sendLog('YouTube', `Error: ${error.message}`, 0, 'error');
         }
       }
 
