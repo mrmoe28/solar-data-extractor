@@ -63,7 +63,7 @@ async function fetchWithRetry(url, options = {}, maxRetries = 3) {
 
       // Rate limited - wait and retry
       if (response.status === 429) {
-        const waitTime = Math.pow(2, attempt) * 2000; // 2s, 4s, 8s
+        const waitTime = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s
         console.log(`    ⏳ Rate limited, waiting ${waitTime / 1000}s...`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
         continue;
@@ -301,7 +301,7 @@ export async function scrapeRedditLeads(location = 'Georgia') {
 
     // Rate limit: Wait between searches
     // With OAuth: 1s, Without OAuth: 5s (to avoid 429 errors)
-    const delay = token ? 1000 : 5000;
+    const delay = token ? 500 : 2000;
     await new Promise(resolve => setTimeout(resolve, delay));
   }
 

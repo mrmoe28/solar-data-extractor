@@ -8,12 +8,12 @@ export async function scrapeYouTubeLeads(location = 'Georgia') {
   const apiKey = process.env.YOUTUBE_API_KEY;
 
   if (!apiKey) {
-    console.log('     YouTube API not configured. Skipping...');
-    console.log('  =¡ Get free API key at: https://console.cloud.google.com/apis/library/youtube.googleapis.com');
+    console.log('  ï¿½  YouTube API not configured. Skipping...');
+    console.log('  =ï¿½ Get free API key at: https://console.cloud.google.com/apis/library/youtube.googleapis.com');
     return [];
   }
 
-  console.log(`\n=ú Searching YouTube comments for solar leads in ${location}...`);
+  console.log(`\n=ï¿½ Searching YouTube comments for solar leads in ${location}...`);
 
   const leads = [];
   const seenCommenters = new Set();
@@ -143,13 +143,13 @@ export async function scrapeYouTubeLeads(location = 'Georgia') {
         }
 
         // Rate limit between videos
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
 
       console.log(`    Found ${leads.length} leads so far`);
 
       // Rate limit between searches
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
     } catch (error) {
       console.error(`  Error searching "${query}":`, error.message);

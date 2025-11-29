@@ -18,11 +18,12 @@ import GoogleSheetsIntegration from './google-sheets-integration.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import child_process from 'child_process';
 import 'dotenv/config';
 
 // Auto-start workers if not running
 function ensureWorkersRunning() {
-  const { execSync } = require('child_process');
+  const { execSync } = child_process;
   
   try {
     // Check if workers are running
@@ -35,7 +36,7 @@ function ensureWorkersRunning() {
     if (fs.existsSync(workersScript)) {
       execSync(`${workersScript} start`, { stdio: 'inherit' });
       console.log('⏳ Waiting for workers to initialize...');
-      setTimeout(() => {}, 3000); // Wait 3 seconds
+      setTimeout(() => {}, 1000); // Wait 1 second
     } else {
       console.log('⚠️  Workers service script not found. Please start workers manually.');
     }
@@ -47,7 +48,7 @@ const __dirname = path.dirname(__filename);
 
 // Lock file to prevent concurrent scrapes
 const LOCK_FILE = path.join(__dirname, '.scraping.lock');
-const SCRAPER_TIMEOUT = 120000; // 120 seconds per scraper
+const SCRAPER_TIMEOUT = 45000; // 45 seconds per scraper (faster)
 
 /**
  * Timeout wrapper for scrapers
