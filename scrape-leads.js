@@ -20,6 +20,28 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import 'dotenv/config';
 
+// Auto-start workers if not running
+function ensureWorkersRunning() {
+  const { execSync } = require('child_process');
+  
+  try {
+    // Check if workers are running
+    execSync('pgrep -f "tsx.*start-workers"', { stdio: 'ignore' });
+    console.log('✅ AI Workers already running');
+  } catch (error) {
+    console.log('🚀 Auto-starting AI Workers...');
+    
+    const workersScript = path.join(__dirname, '../workers-service.sh');
+    if (fs.existsSync(workersScript)) {
+      execSync(`${workersScript} start`, { stdio: 'inherit' });
+      console.log('⏳ Waiting for workers to initialize...');
+      setTimeout(() => {}, 3000); // Wait 3 seconds
+    } else {
+      console.log('⚠️  Workers service script not found. Please start workers manually.');
+    }
+  }
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -64,6 +86,10 @@ class LeadGenerator {
     console.log('║          Real-Time Lead Scraping System                          ║');
     console.log('║                                                                  ║');
     console.log('╚══════════════════════════════════════════════════════════════════╝');
+    console.log('');
+
+    // Auto-start workers for AI analysis
+    ensureWorkersRunning();
     console.log('');
 
     // Check for concurrent scrapes (lock file)
